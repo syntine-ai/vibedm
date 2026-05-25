@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
-import { ArrowRight, Send, Workflow, Users, TrendingUp } from "lucide-react";
+import { ArrowRight, Send, Workflow, TrendingUp } from "lucide-react";
 import { automations, user } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/dashboard")({
@@ -12,8 +12,7 @@ function Dashboard() {
   const stats = [
     { label: "DMs sent this month", value: user.dmUsage.toLocaleString(), icon: Send, accent: "text-primary" },
     { label: "Active automations", value: automations.filter((a) => a.status === "active").length, icon: Workflow, accent: "text-success" },
-    { label: "Total contacts", value: user.contactUsage, icon: Users, accent: "text-warning" },
-    { label: "Conversion rate", value: "—", icon: TrendingUp, accent: "text-muted-foreground", pro: true },
+    { label: "Conversion rate", value: "—", icon: TrendingUp, accent: "text-muted-foreground" },
   ];
 
   return (
@@ -23,7 +22,8 @@ function Dashboard() {
         subtitle="Here's how your automations are performing this month."
         action={
           <Link
-            to="/automations"
+            to="/automations/$id/edit"
+            params={{ id: "new" }}
             className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition"
           >
             Create Automation <ArrowRight className="w-4 h-4" />
@@ -42,11 +42,6 @@ function Dashboard() {
               </div>
               <div className="mt-2 flex items-end gap-2">
                 <div className="text-3xl font-bold">{s.value}</div>
-                {s.pro && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-pro-bg text-pro-text mb-1">
-                    PRO
-                  </span>
-                )}
               </div>
             </div>
           );

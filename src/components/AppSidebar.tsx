@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   Home,
   PlayCircle,
@@ -26,17 +26,13 @@ type NavItem = {
 
 const nav: NavItem[] = [
   { label: "Home", icon: Home, to: "/dashboard" },
-  { label: "Learn", icon: PlayCircle, to: "/learn", badge: "NEW" },
   { label: "Automations", icon: Workflow, to: "/automations" },
-  { label: "Contacts", icon: Users, to: "/contacts" },
-  { label: "Products", icon: Briefcase, to: "/products" },
-  { label: "Orders", icon: Monitor, to: "/orders" },
-  { label: "Refer and Earn", icon: CircleDollarSign, to: "/refer" },
   { label: "Settings", icon: Settings, to: "/settings" },
 ];
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
   const initials = (user.firstName[0] + user.lastName[0]).toUpperCase();
 
   const dmPct = Math.min(100, (user.dmUsage / user.dmLimit) * 100);
@@ -121,11 +117,7 @@ export function AppSidebar() {
 
       {/* Footer */}
       <div className="p-3 space-y-2 border-t border-border">
-        <button className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-warning text-warning-foreground text-[13px] font-semibold hover:opacity-90 transition">
-          <Crown className="w-4 h-4" />
-          Upgrade to Pro
-        </button>
-        <button className="w-full flex items-center justify-center gap-2 px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground transition">
+        <button onClick={() => navigate({ to: "/login" })} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground transition">
           <LogOut className="w-4 h-4" />
           Logout
         </button>

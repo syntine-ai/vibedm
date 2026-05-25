@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
 import { useState } from "react";
 
@@ -8,6 +8,13 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const [show, setShow] = useState(false);
+  const navigate = useNavigate({ from: "/login" });
+  
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    navigate({ to: "/dashboard" });
+  };
+  
   return (
     <div
       className="min-h-screen flex items-center justify-center p-4"
@@ -23,7 +30,7 @@ function LoginPage() {
         <h1 className="text-2xl font-bold text-center mb-1">Welcome back</h1>
         <p className="text-sm text-muted-foreground text-center mb-6">Log in to your account</p>
 
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <form className="space-y-4" onSubmit={handleLogin}>
           <Field label="Email">
             <input type="email" className="input" placeholder="you@example.com" />
           </Field>
@@ -53,7 +60,7 @@ function LoginPage() {
           <div className="flex-1 h-px bg-border" />
         </div>
 
-        <button className="w-full h-12 rounded-lg border border-border bg-card font-medium text-sm flex items-center justify-center gap-2 hover:bg-muted transition">
+        <button type="button" onClick={() => navigate({ to: "/dashboard" })} className="w-full h-12 rounded-lg border border-border bg-card font-medium text-sm flex items-center justify-center gap-2 hover:bg-muted transition">
           <GoogleIcon />
           Continue with Google
         </button>

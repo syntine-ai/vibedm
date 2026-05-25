@@ -11,7 +11,6 @@ import {
 
 import appCss from "../styles.css?url";
 import { AppSidebar } from "@/components/AppSidebar";
-import { ProBanner } from "@/components/ProBanner";
 
 const AUTH_ROUTES = ["/login", "/signup", "/forgot-password"];
 
@@ -119,7 +118,6 @@ function AppFrame() {
       <AppSidebar />
       <main className="flex-1 min-w-0">
         <div className="px-10 py-8 max-w-[1400px] mx-auto">
-          <ProBanner />
           <Outlet />
         </div>
       </main>

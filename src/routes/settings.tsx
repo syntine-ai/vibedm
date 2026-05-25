@@ -2,14 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
 import { useState } from "react";
 import { user } from "@/lib/mock-data";
-import { Instagram, Crown, Check } from "lucide-react";
+import { Instagram } from "lucide-react";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — DMFlow" }] }),
   component: SettingsPage,
 });
 
-const tabs = ["General", "Instagram Accounts", "Billing"] as const;
+const tabs = ["General", "Instagram Accounts"] as const;
 
 function SettingsPage() {
   const [tab, setTab] = useState<(typeof tabs)[number]>("General");
@@ -34,7 +34,6 @@ function SettingsPage() {
 
       {tab === "General" && <GeneralTab />}
       {tab === "Instagram Accounts" && <IGTab />}
-      {tab === "Billing" && <BillingTab />}
     </>
   );
 }
@@ -104,30 +103,3 @@ function IGTab() {
   );
 }
 
-function BillingTab() {
-  return (
-    <div className="space-y-6 max-w-3xl">
-      <div className="bg-card rounded-2xl border border-border/60 shadow-[var(--shadow-card)] p-6">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold">Current Plan</h3>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-muted px-2 py-1 rounded">
-            Free
-          </span>
-        </div>
-        <p className="text-sm text-muted-foreground">Up to 1,000 DMs and 1,000 contacts per month.</p>
-      </div>
-
-      <div className="rounded-2xl p-6 text-white" style={{ background: "linear-gradient(135deg, var(--banner-from), var(--banner-to))" }}>
-        <Crown className="w-7 h-7 mb-2" />
-        <h3 className="text-xl font-bold mb-1">Upgrade to Pro</h3>
-        <p className="text-white/80 text-sm mb-4">Unlimited everything plus advanced response types.</p>
-        <ul className="text-sm text-white/90 space-y-2 mb-5">
-          {["Unlimited DMs & contacts", "Follow-up Message", "Lead Forms & Ask For Follow", "Priority support"].map((f) => (
-            <li key={f} className="flex items-center gap-2"><Check className="w-4 h-4" /> {f}</li>
-          ))}
-        </ul>
-        <button className="bg-white text-primary font-semibold text-sm px-5 py-2.5 rounded-full">Upgrade Now — $19/mo</button>
-      </div>
-    </div>
-  );
-}

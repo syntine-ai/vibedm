@@ -8,12 +8,12 @@ import {
   AtSign,
   ChevronRight,
   Info,
-  Crown,
   Plus,
   Image as ImageIcon,
   Type,
   MessageCircle,
   Play,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -131,7 +131,6 @@ function EditorPage() {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold">Follow-up Message</span>
-                <ProBadge />
               </div>
               <div className="text-xs text-muted-foreground mt-1">
                 Send after automation completes (delay: 1min to 23h 30min).
@@ -153,41 +152,86 @@ function EditorPage() {
 function TriggerDetails({ trigger, onClose }: { trigger: string; onClose: () => void }) {
   const t = triggers.find((x) => x.id === trigger)!;
   const Icon = t.icon;
+  const [postSelected, setPostSelected] = useState(false);
+  const [showPostModal, setShowPostModal] = useState(false);
+
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-accent">
-        <Icon className="w-4 h-4 text-primary" />
+      <div className="flex items-center gap-3 mb-6 p-3 rounded-xl border border-border bg-card">
+        <Icon className="w-5 h-5 text-primary" />
         <span className="flex-1 text-sm font-semibold">{t.label}</span>
-        <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground">✕</button>
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-6">
         {trigger === "comment-post" && (
-          <SubCard icon={<ImageIcon className="w-5 h-5" />} title="Select Post or Reel" hint="Which Post or Reel do you want to use?" />
+          <>
+            <SubCard 
+              icon={<ImageIcon className="w-6 h-6" />} 
+              label="Which Post or Reel do you want to use?"
+              title="Select Post or Reel" 
+              selectedText="Selected: Summer Collection Reel"
+              selected={postSelected}
+              onClick={() => setShowPostModal(true)} 
+            />
+            <SubCard icon={<Type className="w-6 h-6" />} label="What keywords will start your automation?" title="Setup Keywords" onClick={() => alert("Demo: Keywords setup opened")} />
+            <SubCard icon={<MessageCircle className="w-6 h-6" />} label="What do you want to reply to those comments?" title="Setup Comment Replies" onClick={() => alert("Demo: Replies setup opened")} />
+          </>
         )}
+        
+        {trigger === "live" && (
+          <>
+            <SubCard icon={<ImageIcon className="w-6 h-6" />} label="Which Live do you want to use?" title="Select Live" onClick={() => alert("Demo: Select Live opened")} />
+            <SubCard icon={<Type className="w-6 h-6" />} label="What keywords will start your automation?" title="Setup Keywords" onClick={() => alert("Demo: Keywords setup opened")} />
+          </>
+        )}
+
+        {trigger === "dm" && (
+          <SubCard icon={<Type className="w-6 h-6" />} label="What keywords In DMs will trigger your automation?" title="Setup Keywords" onClick={() => alert("Demo: Keywords setup opened")} />
+        )}
+
         {trigger === "story-reply" && (
-          <SubCard icon={<ImageIcon className="w-5 h-5" />} title="Select Story" hint="Which story do you want to use?" />
-        )}
-        <SubCard icon={<Type className="w-5 h-5" />} title="Setup Keywords" hint="What keywords will start your automation?" />
-        {(trigger === "comment-post" || trigger === "live") && (
-          <SubCard icon={<MessageCircle className="w-5 h-5" />} title="Setup Comment Replies" hint="What do you want to reply to those comments?" />
+          <>
+            <SubCard icon={<ImageIcon className="w-6 h-6" />} label="Which story do you want to use?" title="Select Story" onClick={() => alert("Demo: Select Story opened")} />
+            <SubCard icon={<Type className="w-6 h-6" />} label="What keywords will start your automation?" title="Setup Keywords" onClick={() => alert("Demo: Keywords setup opened")} />
+          </>
         )}
       </div>
+
+      {showPostModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-card rounded-2xl shadow-[var(--shadow-modal)] border border-border p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-bold">Select from @alex.creates</h2>
+              <button onClick={() => setShowPostModal(false)} className="p-2 hover:bg-muted rounded-md"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-6">
+               {[1,2,3,4,5,6].map(i => (
+                 <div key={i} onClick={() => { setPostSelected(true); setShowPostModal(false); }} className="aspect-square bg-muted rounded-lg cursor-pointer hover:opacity-80 transition flex items-center justify-center overflow-hidden border border-border">
+                    <img src={`https://placehold.co/400x400/e2e8f0/64748b?text=Post+${i}`} alt="post" className="w-full h-full object-cover" />
+                 </div>
+               ))}
+            </div>
+            <button onClick={() => setShowPostModal(false)} className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary-dark transition">Done</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function SubCard({ icon, title, hint }: { icon: React.ReactNode; title: string; hint: string }) {
+function SubCard({ icon, title, label, onClick, selected, selectedText }: { icon: React.ReactNode; title: string; label: string; onClick?: () => void; selected?: boolean; selectedText?: string }) {
   return (
-    <button className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-dashed border-border bg-muted/30 hover:bg-muted text-left transition">
-      <div className="w-10 h-10 rounded-lg bg-card border border-border flex items-center justify-center text-muted-foreground">
-        {icon}
-      </div>
-      <div className="flex-1">
-        <div className="text-xs text-muted-foreground">{hint}</div>
-        <div className="text-sm font-semibold mt-0.5">{title}</div>
-      </div>
-      <ChevronRight className="w-4 h-4 text-muted-foreground" />
-    </button>
+    <div>
+      <div className="text-sm font-medium mb-2">{label}</div>
+      <button onClick={onClick} className={`w-full flex flex-col items-center justify-center gap-2 py-8 rounded-xl border-2 ${selected ? 'border-primary bg-primary/5 text-primary' : 'border-dashed border-border bg-card hover:bg-muted text-muted-foreground'} transition`}>
+        <div className={`${selected ? 'text-primary' : 'text-muted-foreground'}`}>
+          {icon}
+        </div>
+        <div className="text-sm font-medium">
+          {selected && selectedText ? selectedText : title}
+        </div>
+      </button>
+    </div>
   );
 }
 
@@ -246,13 +290,3 @@ function ToggleRow({
   );
 }
 
-function ProBadge() {
-  return (
-    <span
-      className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
-      style={{ background: "var(--pro-bg)", color: "var(--pro-text)" }}
-    >
-      <Crown className="w-3 h-3" /> PRO
-    </span>
-  );
-}

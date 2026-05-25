@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
 
 export const Route = createFileRoute("/signup")({
@@ -6,6 +6,13 @@ export const Route = createFileRoute("/signup")({
 });
 
 function SignupPage() {
+  const navigate = useNavigate({ from: "/signup" });
+  
+  const handleSignup = (e: React.FormEvent) => {
+    e.preventDefault();
+    navigate({ to: "/dashboard" });
+  };
+
   return (
     <div
       className="min-h-screen flex items-center justify-center p-4"
@@ -21,7 +28,7 @@ function SignupPage() {
         <h1 className="text-2xl font-bold text-center mb-1">Create your account</h1>
         <p className="text-sm text-muted-foreground text-center mb-6">Start automating in minutes</p>
 
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <form className="space-y-4" onSubmit={handleSignup}>
           <div className="grid grid-cols-2 gap-3">
             <L label="First name">
               <input className="input" placeholder="Alex" />

@@ -4,7 +4,7 @@ export const user = {
   email: "alex@example.com",
   phone: "+1 555 0100",
   plan: "free" as "free" | "pro",
-  igConnected: false,
+  igConnected: true,
   igUsername: "alex.creates",
   dmUsage: 142,
   dmLimit: 1000,
