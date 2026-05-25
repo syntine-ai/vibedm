@@ -17,7 +17,14 @@ import {
 } from "lucide-react";
 import { user } from "@/lib/mock-data";
 
-const nav = [
+type NavItem = {
+  label: string;
+  icon: typeof Home;
+  to: string;
+  badge?: string;
+};
+
+const nav: NavItem[] = [
   { label: "Home", icon: Home, to: "/dashboard" },
   { label: "Learn", icon: PlayCircle, to: "/learn", badge: "NEW" },
   { label: "Automations", icon: Workflow, to: "/automations" },
@@ -26,7 +33,7 @@ const nav = [
   { label: "Orders", icon: Monitor, to: "/orders" },
   { label: "Refer and Earn", icon: CircleDollarSign, to: "/refer" },
   { label: "Settings", icon: Settings, to: "/settings" },
-] as const;
+];
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
