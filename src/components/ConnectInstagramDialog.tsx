@@ -47,7 +47,7 @@ export function ConnectInstagramDialog({
           </div>
           <DialogTitle>Connect Instagram</DialogTitle>
           <DialogDescription>
-            Log in with Instagram first, then create the workspace for that account.
+            Connect your Instagram Business account to get started.
           </DialogDescription>
         </DialogHeader>
 
@@ -55,8 +55,8 @@ export function ConnectInstagramDialog({
           {error && <p className="text-xs text-destructive mt-2">{error}</p>}
 
           <p className="text-xs text-muted-foreground mt-3">
-            You will be redirected to Instagram. After approval, Vibedm creates or connects the
-            workspace automatically.
+            A popup will open for Instagram login. After you approve access, Vibedm will
+            automatically link your Instagram Business account.
           </p>
         </div>
 
@@ -70,7 +70,7 @@ export function ConnectInstagramDialog({
             ) : (
               <Instagram className="w-4 h-4" />
             )}
-            {connecting ? "Redirecting..." : "Log in with Instagram"}
+            {connecting ? "Connecting..." : "Continue with Instagram"}
           </Button>
         </DialogFooter>
       </DialogContent>

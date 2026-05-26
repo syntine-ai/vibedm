@@ -114,7 +114,18 @@ export function useStartInstagramOauth(intent: "onboarding" | "add_workspace") {
     mutationFn: async () => {
       const response = await instagramApi.startOauth();
       localStorage.setItem("vibedm.instagram_intent", intent);
-      window.location.assign(response.url);
+
+      // Open Meta OAuth in a centered popup instead of redirecting the whole page
+      const width = 600;
+      const height = 700;
+      const left = Math.round(window.screenX + (window.outerWidth - width) / 2);
+      const top = Math.round(window.screenY + (window.outerHeight - height) / 2);
+      window.open(
+        response.url,
+        "instagram_oauth",
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`,
+      );
+
       return response;
     },
   });
