@@ -261,28 +261,115 @@ Webhook handlers MUST:
 
 ```
 app/
-  main.py                  # FastAPI app, middleware, routers include
-  config.py                # pydantic-settings, reads env
-  deps.py                  # get_current_user, get_workspace, get_db
-  db.py                    # async SQLAlchemy / asyncpg + Supabase admin client
-  security.py              # JWT verify, signature verify helpers
-  routers/
-    auth.py
-    workspaces.py
-    instagram.py
-    automations.py
-    contacts.py
-    products.py
-    orders.py
-    dashboard.py
-    billing.py
-    referrals.py
-    webhooks.py            # mounted at /api/public/webhooks
-  models/                  # SQLAlchemy models
-  schemas/                 # Pydantic request/response models
-  services/                # business logic (automation runner, billing, ig client)
-  workers/                 # background job handlers
+  main.py
+  config.py
+  deps.py
+  db.py
+  security.py
+
+  core/
+    errors.py
+    pagination.py
+    logging.py
+    constants.py
+
+  modules/
+    auth/
+      routers/auth.py
+      schemas/auth.py
+      services/auth.py
+      repositories/auth.py
+      models/auth.py
+
+    workspaces/
+      routers/workspaces.py
+      schemas/workspaces.py
+      services/workspaces.py
+      repositories/workspaces.py
+      models/workspaces.py
+
+    instagram/
+      routers/instagram.py
+      schemas/instagram.py
+      services/instagram.py
+      repositories/instagram.py
+      models/instagram.py
+      workers/instagram.py
+
+    automations/
+      routers/automations.py
+      schemas/automations.py
+      services/automations.py
+      repositories/automations.py
+      models/automations.py
+      workers/automations.py
+
+    contacts/
+      routers/contacts.py
+      schemas/contacts.py
+      services/contacts.py
+      repositories/contacts.py
+      models/contacts.py
+
+    products/
+      routers/products.py
+      schemas/products.py
+      services/products.py
+      repositories/products.py
+      models/products.py
+
+    orders/
+      routers/orders.py
+      schemas/orders.py
+      services/orders.py
+      repositories/orders.py
+      models/orders.py
+
+    dashboard/
+      routers/dashboard.py
+      schemas/dashboard.py
+      services/dashboard.py
+      repositories/dashboard.py
+
+    billing/
+      routers/billing.py
+      schemas/billing.py
+      services/billing.py
+      repositories/billing.py
+      models/billing.py
+      workers/billing.py
+
+    referrals/
+      routers/referrals.py
+      schemas/referrals.py
+      services/referrals.py
+      repositories/referrals.py
+      models/referrals.py
+
+    webhooks/
+      routers/webhooks.py
+      schemas/webhooks.py
+      services/webhooks.py
+      repositories/webhooks.py
+      models/webhooks.py
+      workers/webhooks.py
+
+  migrations/
+    versions/
+
   tests/
+    modules/
+      auth/
+      workspaces/
+      instagram/
+      automations/
+      contacts/
+      products/
+      orders/
+      dashboard/
+      billing/
+      referrals/
+      webhooks/
 ```
 
 ### Required env vars
