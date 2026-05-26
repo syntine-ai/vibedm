@@ -27,9 +27,12 @@ function LoginPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (signInError) throw signInError;
-      await authApi.sync();
+      await authApi.sync(signInData.session?.access_token ?? null);
       const me = await authApi.me();
       queryClient.setQueryData(queryKeys.authMe, me);
       if (getActiveWorkspace(me.workspaces) || me.workspaces.length > 0) {

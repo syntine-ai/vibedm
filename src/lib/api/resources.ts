@@ -42,7 +42,8 @@ export type ContactFilters = {
 };
 
 export const authApi = {
-  sync: () => api.request<UserProfile>("/api/v1/auth/sync", { method: "POST" }),
+  sync: (accessToken?: string | null) =>
+    api.request<UserProfile>("/api/v1/auth/sync", { method: "POST", accessToken }),
   me: () => api.request<AuthMe>("/api/v1/auth/me"),
   logout: () => api.request<Record<string, boolean>>("/api/v1/auth/logout", { method: "POST" }),
 };

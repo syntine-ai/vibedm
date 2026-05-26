@@ -19,6 +19,7 @@ type RequestOptions = {
   body?: unknown;
   workspaceScoped?: boolean;
   workspaceId?: string | null;
+  accessToken?: string | null;
   headers?: HeadersInit;
 };
 
@@ -84,7 +85,7 @@ export function createApiClient({
 }: ApiClientOptions = {}) {
   async function request<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
     const method = options.method ?? "GET";
-    const token = await getAccessToken();
+    const token = options.accessToken ?? (await getAccessToken());
     const workspaceId = options.workspaceId ?? getActiveWorkspaceId();
     const headers = new Headers(options.headers);
 
