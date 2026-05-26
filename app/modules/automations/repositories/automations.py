@@ -1,0 +1,195 @@
+from __future__ import annotations
+
+from uuid import UUID
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+
+class AutomationRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def list_automations(
+        self,
+        *,
+        workspace_id: UUID,
+        status: str | None,
+        trigger_type: str | None,
+        q: str | None,
+    ) -> list[dict]:
+        result = await self.session.execute(
+            text(
+                """
+                select id, name, status::text as status, trigger_type::text as trigger_type,
+                       trigger_config
+                from public.automations
+                where workspace_id = :workspace_id
+                  and deleted_at is null
+                  and (:status is null or status::text = :status)
+                  and (:trigger_type is null or trigger_type::text = :trigger_type)
+                  and (:q is null or name ilike '%' || :q || '%')
+                order by updated_at desc
+                """
+            ),
+            {"workspace_id": workspace_id, "status": status, "trigger_type": trigger_type, "q": q},
+        )
+        return [dict(row) for row in result.mappings().all()]
+
+    async def create(
+        self, *, workspace_id: UUID, user_id: UUID, name: str, trigger_type: str | None
+    ) -> dict:
+        result = await self.session.execute(
+            text(
+                """
+                insert into public.automations (workspace_id, created_by, name, trigger_type)
+                values (:workspace_id, :user_id, :name, :trigger_type)
+                returning id, name, status::text as status, trigger_type::text as trigger_type,
+                          trigger_config
+                """
+            ),
+            {
+                "workspace_id": workspace_id,
+                "user_id": user_id,
+                "name": name,
+                "trigger_type": trigger_type,
+            },
+        )
+        await self.session.commit()
+        return dict(result.mappings().one())
+
+    async def get_detail(self, *, workspace_id: UUID, automation_id: UUID) -> dict | None:
+        result = await self.session.execute(
+            text(
+                """
+                select id, name, status::text as status, trigger_type::text as trigger_type,
+                       trigger_config
+                from public.automations
+                where id = :automation_id and workspace_id = :workspace_id and deleted_at is null
+                """
+            ),
+            {"workspace_id": workspace_id, "automation_id": automation_id},
+        )
+        automation = result.mappings().first()
+        if automation is None:
+            return None
+
+        steps_result = await self.session.execute(
+            text(
+                """
+                select id, step_order as "order", action_type::text as action_type, config
+                from public.automation_steps
+                where automation_id = :automation_id
+                order by step_order asc
+                """
+            ),
+            {"automation_id": automation_id},
+        )
+        return dict(automation) | {"steps": [dict(row) for row in steps_result.mappings().all()]}
+
+    async def replace(self, *, workspace_id: UUID, automation_id: UUID, data: dict) -> dict | None:
+        existing = await self.get_detail(workspace_id=workspace_id, automation_id=automation_id)
+        if existing is None:
+            return None
+
+        await self.session.execute(
+            text(
+                """
+                update public.automations
+                set name = coalesce(:name, name),
+                    trigger_type = coalesce(:trigger_type, trigger_type),
+                    trigger_config = coalesce(:trigger_config, trigger_config),
+                    updated_at = now()
+                where id = :automation_id and workspace_id = :workspace_id
+                """
+            ),
+            {
+                "workspace_id": workspace_id,
+                "automation_id": automation_id,
+                "name": data.get("name"),
+                "trigger_type": data.get("trigger_type"),
+                "trigger_config": data.get("trigger_config"),
+            },
+        )
+        if data.get("steps") is not None:
+            await self.session.execute(
+                text("delete from public.automation_steps where automation_id = :automation_id"),
+                {"automation_id": automation_id},
+            )
+            for step in data["steps"]:
+                await self.session.execute(
+                    text(
+                        """
+                        insert into public.automation_steps
+                          (automation_id, step_order, action_type, config)
+                        values (:automation_id, :step_order, :action_type, :config)
+                        """
+                    ),
+                    {
+                        "automation_id": automation_id,
+                        "step_order": step.order,
+                        "action_type": step.action_type,
+                        "config": step.config,
+                    },
+                )
+        await self.session.commit()
+        return await self.get_detail(workspace_id=workspace_id, automation_id=automation_id)
+
+    async def set_status(
+        self, *, workspace_id: UUID, automation_id: UUID, status: str
+    ) -> dict | None:
+        result = await self.session.execute(
+            text(
+                """
+                update public.automations set status = :status, updated_at = now()
+                where id = :automation_id and workspace_id = :workspace_id and deleted_at is null
+                returning id
+                """
+            ),
+            {"workspace_id": workspace_id, "automation_id": automation_id, "status": status},
+        )
+        await self.session.commit()
+        if result.mappings().first() is None:
+            return None
+        return await self.get_detail(workspace_id=workspace_id, automation_id=automation_id)
+
+    async def delete(self, *, workspace_id: UUID, automation_id: UUID) -> None:
+        await self.session.execute(
+            text(
+                """
+                update public.automations set deleted_at = now()
+                where id = :automation_id and workspace_id = :workspace_id
+                """
+            ),
+            {"workspace_id": workspace_id, "automation_id": automation_id},
+        )
+        await self.session.commit()
+
+    async def create_run(self, *, workspace_id: UUID, automation_id: UUID, event: dict) -> dict:
+        result = await self.session.execute(
+            text(
+                """
+                insert into public.automation_runs
+                  (workspace_id, automation_id, status, trigger_event, step_trace)
+                values (:workspace_id, :automation_id, 'queued', :event, '[]'::jsonb)
+                returning id, automation_id, status::text as status, trigger_event, step_trace
+                """
+            ),
+            {"workspace_id": workspace_id, "automation_id": automation_id, "event": event},
+        )
+        await self.session.commit()
+        return dict(result.mappings().one())
+
+    async def list_runs(self, *, workspace_id: UUID, automation_id: UUID) -> list[dict]:
+        result = await self.session.execute(
+            text(
+                """
+                select id, automation_id, status::text as status, trigger_event, step_trace
+                from public.automation_runs
+                where workspace_id = :workspace_id and automation_id = :automation_id
+                order by created_at desc
+                """
+            ),
+            {"workspace_id": workspace_id, "automation_id": automation_id},
+        )
+        return [dict(row) for row in result.mappings().all()]
