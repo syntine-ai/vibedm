@@ -1,6 +1,7 @@
 import { Instagram, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useStartInstagramOauth } from "@/lib/api/hooks";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,8 @@ import {
 type ConnectInstagramDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConnected: () => void;
+  onConnected?: () => void;
+  intent?: "onboarding" | "add_workspace";
   isConnecting?: boolean;
   errorMessage?: string;
 };
@@ -22,12 +24,19 @@ export function ConnectInstagramDialog({
   open,
   onOpenChange,
   onConnected,
+  intent = "onboarding",
   isConnecting = false,
   errorMessage,
 }: ConnectInstagramDialogProps) {
+  const oauthMutation = useStartInstagramOauth(intent);
   const submit = () => {
-    onConnected();
+    onConnected?.();
+    oauthMutation.mutate();
   };
+  const connecting = isConnecting || oauthMutation.isPending;
+  const error =
+    errorMessage ||
+    (oauthMutation.error instanceof Error ? oauthMutation.error.message : undefined);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -43,20 +52,25 @@ export function ConnectInstagramDialog({
         </DialogHeader>
 
         <div className="px-6 pb-2">
-          {errorMessage && <p className="text-xs text-destructive mt-2">{errorMessage}</p>}
+          {error && <p className="text-xs text-destructive mt-2">{error}</p>}
 
           <p className="text-xs text-muted-foreground mt-3">
-            This currently simulates a successful Instagram login callback and is ready for OAuth wiring.
+            You will be redirected to Instagram. After approval, Vibedm creates or connects the
+            workspace automatically.
           </p>
         </div>
 
         <DialogFooter className="px-6 py-5 border-t border-border bg-surface sm:justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isConnecting}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={connecting}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={isConnecting}>
-            {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Instagram className="w-4 h-4" />}
-            {isConnecting ? "Logging in..." : "Log in with Instagram"}
+          <Button onClick={submit} disabled={connecting}>
+            {connecting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Instagram className="w-4 h-4" />
+            )}
+            {connecting ? "Redirecting..." : "Log in with Instagram"}
           </Button>
         </DialogFooter>
       </DialogContent>

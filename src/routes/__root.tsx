@@ -1,18 +1,21 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  Outlet,
+  HeadContent,
   Link,
+  Outlet,
+  Scripts,
   createRootRouteWithContext,
+  useNavigate,
   useRouter,
   useRouterState,
-  HeadContent,
-  Scripts,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { AppSidebar } from "@/components/AppSidebar";
+import { useAuthMeQuery, useSessionQuery } from "@/lib/api/hooks";
 
-const AUTH_ROUTES = ["/login", "/signup", "/forgot-password"];
+const AUTH_ROUTES = ["/login", "/signup", "/forgot-password", "/auth/instagram/callback"];
 
 function NotFoundComponent() {
   return (
@@ -64,13 +67,30 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "DMFlow — Instagram DM Automation" },
-      { name: "description", content: "Automate Instagram DMs triggered by comments, replies, and mentions." },
+      {
+        name: "description",
+        content: "Automate Instagram DMs triggered by comments, replies, and mentions.",
+      },
       { property: "og:title", content: "DMFlow — Instagram DM Automation" },
       { name: "twitter:title", content: "DMFlow — Instagram DM Automation" },
-      { property: "og:description", content: "Automate Instagram DMs triggered by comments, replies, and mentions." },
-      { name: "twitter:description", content: "Automate Instagram DMs triggered by comments, replies, and mentions." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d06a00aa-6992-4f85-9769-15982fe16605/id-preview-0e5c6911--b074ac34-e5e0-4137-beaf-70caf0891b83.lovable.app-1779731369660.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d06a00aa-6992-4f85-9769-15982fe16605/id-preview-0e5c6911--b074ac34-e5e0-4137-beaf-70caf0891b83.lovable.app-1779731369660.png" },
+      {
+        property: "og:description",
+        content: "Automate Instagram DMs triggered by comments, replies, and mentions.",
+      },
+      {
+        name: "twitter:description",
+        content: "Automate Instagram DMs triggered by comments, replies, and mentions.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d06a00aa-6992-4f85-9769-15982fe16605/id-preview-0e5c6911--b074ac34-e5e0-4137-beaf-70caf0891b83.lovable.app-1779731369660.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d06a00aa-6992-4f85-9769-15982fe16605/id-preview-0e5c6911--b074ac34-e5e0-4137-beaf-70caf0891b83.lovable.app-1779731369660.png",
+      },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
     ],
@@ -119,6 +139,32 @@ function AppFrame() {
 
   if (isAuth) {
     return <Outlet />;
+  }
+
+  return <ProtectedAppFrame />;
+}
+
+function ProtectedAppFrame() {
+  const navigate = useNavigate();
+  const sessionQuery = useSessionQuery();
+  const meQuery = useAuthMeQuery(Boolean(sessionQuery.data));
+
+  useEffect(() => {
+    if (sessionQuery.isSuccess && !sessionQuery.data) {
+      navigate({ to: "/login", replace: true });
+    }
+  }, [navigate, sessionQuery.data, sessionQuery.isSuccess]);
+
+  if (sessionQuery.isLoading || (sessionQuery.data && meQuery.isLoading)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+        Loading workspace...
+      </div>
+    );
+  }
+
+  if (!sessionQuery.data) {
+    return null;
   }
 
   return (

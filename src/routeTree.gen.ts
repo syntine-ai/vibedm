@@ -13,10 +13,12 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ContactsRouteImport } from './routes/contacts'
 import { Route as AutomationsRouteImport } from './routes/automations'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AutomationsIndexRouteImport } from './routes/automations.index'
 import { Route as AutomationsIdEditRouteImport } from './routes/automations.$id.edit'
+import { Route as AuthInstagramCallbackRouteImport } from './routes/auth.instagram.callback'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -36,6 +38,11 @@ const LoginRoute = LoginRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactsRoute = ContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AutomationsRoute = AutomationsRouteImport.update({
@@ -58,35 +65,46 @@ const AutomationsIdEditRoute = AutomationsIdEditRouteImport.update({
   path: '/$id/edit',
   getParentRoute: () => AutomationsRoute,
 } as any)
+const AuthInstagramCallbackRoute = AuthInstagramCallbackRouteImport.update({
+  id: '/auth/instagram/callback',
+  path: '/auth/instagram/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/automations': typeof AutomationsRouteWithChildren
+  '/contacts': typeof ContactsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/automations/': typeof AutomationsIndexRoute
+  '/auth/instagram/callback': typeof AuthInstagramCallbackRoute
   '/automations/$id/edit': typeof AutomationsIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/contacts': typeof ContactsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/automations': typeof AutomationsIndexRoute
+  '/auth/instagram/callback': typeof AuthInstagramCallbackRoute
   '/automations/$id/edit': typeof AutomationsIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/automations': typeof AutomationsRouteWithChildren
+  '/contacts': typeof ContactsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/automations/': typeof AutomationsIndexRoute
+  '/auth/instagram/callback': typeof AuthInstagramCallbackRoute
   '/automations/$id/edit': typeof AutomationsIdEditRoute
 }
 export interface FileRouteTypes {
@@ -94,40 +112,48 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/automations'
+    | '/contacts'
     | '/dashboard'
     | '/login'
     | '/settings'
     | '/signup'
     | '/automations/'
+    | '/auth/instagram/callback'
     | '/automations/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/contacts'
     | '/dashboard'
     | '/login'
     | '/settings'
     | '/signup'
     | '/automations'
+    | '/auth/instagram/callback'
     | '/automations/$id/edit'
   id:
     | '__root__'
     | '/'
     | '/automations'
+    | '/contacts'
     | '/dashboard'
     | '/login'
     | '/settings'
     | '/signup'
     | '/automations/'
+    | '/auth/instagram/callback'
     | '/automations/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AutomationsRoute: typeof AutomationsRouteWithChildren
+  ContactsRoute: typeof ContactsRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
+  AuthInstagramCallbackRoute: typeof AuthInstagramCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -160,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/contacts': {
+      id: '/contacts'
+      path: '/contacts'
+      fullPath: '/contacts'
+      preLoaderRoute: typeof ContactsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/automations': {
       id: '/automations'
       path: '/automations'
@@ -188,6 +221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutomationsIdEditRouteImport
       parentRoute: typeof AutomationsRoute
     }
+    '/auth/instagram/callback': {
+      id: '/auth/instagram/callback'
+      path: '/auth/instagram/callback'
+      fullPath: '/auth/instagram/callback'
+      preLoaderRoute: typeof AuthInstagramCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -208,10 +248,12 @@ const AutomationsRouteWithChildren = AutomationsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AutomationsRoute: AutomationsRouteWithChildren,
+  ContactsRoute: ContactsRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
+  AuthInstagramCallbackRoute: AuthInstagramCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
