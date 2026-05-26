@@ -1,15 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ConnectInstagramDialog } from "@/components/ConnectInstagramDialog";
 import { PageHeader } from "@/components/PageHeader";
 import { useState } from "react";
 import { user, initialWorkspaces, type Workspace } from "@/lib/mock-data";
-import { Instagram, Plus, Check, Trash2 } from "lucide-react";
+import { Instagram, Plus, Check, Trash2, CreditCard } from "lucide-react";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — DMFlow" }] }),
   component: SettingsPage,
 });
 
-const tabs = ["General", "Instagram Accounts", "Workspaces"] as const;
+const tabs = ["General", "Instagram Accounts", "Workspaces", "Billing"] as const;
 
 function SettingsPage() {
   const [tab, setTab] = useState<(typeof tabs)[number]>("General");
@@ -35,15 +36,14 @@ function SettingsPage() {
       {tab === "General" && <GeneralTab />}
       {tab === "Instagram Accounts" && <IGTab />}
       {tab === "Workspaces" && <WorkspacesTab />}
+          {tab === "Billing" && <BillingTab />}
     </>
   );
 }
 
 function WorkspacesTab() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>(initialWorkspaces);
-  const [adding, setAdding] = useState(false);
-  const [name, setName] = useState("");
-  const [ig, setIg] = useState("");
+  const [connectDialogOpen, setConnectDialogOpen] = useState(false);
 
   const setActive = (id: string) =>
     setWorkspaces((ws) => ws.map((w) => ({ ...w, active: w.id === id })));
@@ -55,124 +55,100 @@ function WorkspacesTab() {
       return filtered;
     });
 
-  const add = () => {
-    if (!name.trim() || !ig.trim()) return;
+  const addConnectedWorkspace = () => {
     const id = `w${Date.now()}`;
-    setWorkspaces((ws) => [...ws, { id, name: name.trim(), igUsername: ig.replace(/^@/, "").trim(), active: false }]);
-    setName("");
-    setIg("");
-    setAdding(false);
+    const connectedIgUsername = user.igUsername?.replace(/^@/, "").trim() || "connected.account";
+
+    setWorkspaces((ws) => {
+      const nextIndex = ws.length + 1;
+      const autoName = `Workspace ${nextIndex}`;
+      return [...ws.map((workspace) => ({ ...workspace, active: false })), { id, name: autoName, igUsername: connectedIgUsername, active: true }];
+    });
   };
 
   return (
-    <div className="bg-card rounded-2xl border border-border/60 shadow-[var(--shadow-card)] p-6 max-w-3xl">
-      <div className="flex items-start justify-between mb-5">
-        <div>
-          <h3 className="font-semibold">Your workspaces</h3>
-          <p className="text-xs text-primary mt-0.5">
-            {workspaces.length} workspace{workspaces.length === 1 ? "" : "s"} connected
-          </p>
-        </div>
-        <button
-          onClick={() => setAdding((v) => !v)}
-          className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition flex items-center gap-1.5"
-        >
-          <Plus className="w-4 h-4" /> Add workspace
-        </button>
-      </div>
-
-      <p className="text-sm text-muted-foreground mb-4">
-        Each workspace is linked to one Instagram account. Switch between them anytime.
-      </p>
-
-      {adding && (
-        <div className="rounded-xl border border-border p-4 mb-4 bg-surface">
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <label className="block">
-              <span className="text-xs font-medium mb-1.5 block">Workspace name</span>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="My Brand"
-                className="w-full h-10 px-3 border border-border rounded-lg text-sm outline-none focus:border-primary"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs font-medium mb-1.5 block">Instagram username</span>
-              <input
-                value={ig}
-                onChange={(e) => setIg(e.target.value)}
-                placeholder="@username"
-                className="w-full h-10 px-3 border border-border rounded-lg text-sm outline-none focus:border-primary"
-              />
-            </label>
+    <>
+      <div className="bg-card rounded-2xl border border-border/60 shadow-[var(--shadow-card)] p-6 max-w-3xl">
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <h3 className="font-semibold">Your workspaces</h3>
+            <p className="text-xs text-primary mt-0.5">
+              {workspaces.length} workspace{workspaces.length === 1 ? "" : "s"} connected
+            </p>
           </div>
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => setAdding(false)}
-              className="h-9 px-4 rounded-lg border border-border text-sm font-semibold hover:bg-accent"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={add}
-              className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark"
-            >
-              Create
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-2.5">
-        {workspaces.map((w) => (
-          <div
-            key={w.id}
-            className={`flex items-center gap-3 rounded-xl border p-3.5 transition ${
-              w.active ? "border-primary/40 bg-accent" : "border-border hover:bg-accent/50"
-            }`}
+          <button
+            onClick={() => {
+              setConnectDialogOpen(true);
+            }}
+            className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition flex items-center gap-1.5"
           >
-            <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold shrink-0">
-              {w.name[0]}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold truncate">{w.name}</span>
-                {w.active && (
-                  <span className="text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded">
-                    Active
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                <Instagram className="w-3.5 h-3.5" /> @{w.igUsername}
-              </div>
-            </div>
-            <button
-              onClick={() => setActive(w.id)}
-              disabled={w.active}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
-                w.active
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-accent text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+            <Plus className="w-4 h-4" /> Add workspace
+          </button>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-4">
+          Each workspace is linked to one Instagram account. Switch between them anytime.
+        </p>
+
+        <div className="space-y-2.5">
+          {workspaces.map((w) => (
+            <div
+              key={w.id}
+              className={`flex items-center gap-3 rounded-xl border p-3.5 transition ${
+                w.active ? "border-primary/40 bg-accent" : "border-border hover:bg-accent/50"
               }`}
-              title={w.active ? "Active workspace" : "Set as active"}
             >
-              <Check className="w-4 h-4" />
-            </button>
-            {workspaces.length > 1 && (
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold shrink-0">
+                {w.name[0]}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold truncate">{w.name}</span>
+                  {w.active && (
+                    <span className="text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                      Active
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                  <Instagram className="w-3.5 h-3.5" /> @{w.igUsername}
+                </div>
+              </div>
               <button
-                onClick={() => remove(w.id)}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
-                title="Remove workspace"
+                onClick={() => setActive(w.id)}
+                disabled={w.active}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
+                  w.active
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-accent text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                }`}
+                title={w.active ? "Active workspace" : "Set as active"}
               >
-                <Trash2 className="w-4 h-4" />
+                <Check className="w-4 h-4" />
               </button>
-            )}
-          </div>
-        ))}
+              {workspaces.length > 1 && (
+                <button
+                  onClick={() => remove(w.id)}
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
+                  title="Remove workspace"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+
+      <ConnectInstagramDialog
+        open={connectDialogOpen}
+        onOpenChange={setConnectDialogOpen}
+        onConnected={() => {
+          setConnectDialogOpen(false);
+          addConnectedWorkspace();
+        }}
+      />
+    </>
   );
 }
 
@@ -238,6 +214,30 @@ function IGTab() {
         </div>
       )}
     </div>
+  );
+}
+
+function BillingTab() {
+  return (
+    <>
+      <div className="bg-card rounded-2xl border border-border/60 shadow-[var(--shadow-card)] p-6 max-w-3xl mb-6">
+        <div className="flex flex-col items-center text-center py-8">
+          <div className="w-20 h-20 rounded-2xl bg-accent flex items-center justify-center mb-4">
+            <CreditCard className="w-8 h-8 text-primary" />
+          </div>
+          <h3 className="font-semibold mb-1">No Active Subscription</h3>
+          <p className="text-sm text-muted-foreground mb-6">You don't have any active subscriptions yet. Activate a subscription to unlock all premium features.</p>
+          <button className="h-11 px-5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Activate Subscription
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-card rounded-2xl border border-border/60 shadow-[var(--shadow-card)] p-6 max-w-3xl">
+        <h3 className="font-semibold">Invoice History</h3>
+        <p className="text-sm text-muted-foreground mt-4">No invoices found yet</p>
+      </div>
+    </>
   );
 }
 

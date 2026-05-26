@@ -1,5 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
+import { useState } from "react";
+
+import { ConnectInstagramDialog } from "@/components/ConnectInstagramDialog";
 
 export const Route = createFileRoute("/signup")({
   component: SignupPage,
@@ -7,10 +10,11 @@ export const Route = createFileRoute("/signup")({
 
 function SignupPage() {
   const navigate = useNavigate({ from: "/signup" });
+  const [connectDialogOpen, setConnectDialogOpen] = useState(false);
   
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate({ to: "/dashboard" });
+    setConnectDialogOpen(true);
   };
 
   return (
@@ -54,6 +58,16 @@ function SignupPage() {
           </Link>
         </p>
       </div>
+
+      <ConnectInstagramDialog
+        open={connectDialogOpen}
+        onOpenChange={setConnectDialogOpen}
+        onConnected={() => {
+          setConnectDialogOpen(false);
+          navigate({ to: "/dashboard" });
+        }}
+      />
+
       <style>{`.input { width: 100%; height: 44px; padding: 0 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; outline: none; background: var(--surface); }
 .input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(61,58,238,0.12); }`}</style>
     </div>
