@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from urllib.parse import urlencode
+import httpx
 
 from app.config import Settings
 from app.core.errors import ApiError
@@ -13,15 +14,104 @@ from app.modules.instagram.schemas.instagram import (
 )
 from app.security import sign_state, verify_state
 
+# Instagram Business Login scopes (shows Instagram login screen, not Facebook)
+INSTAGRAM_SCOPES = [
+    "instagram_business_basic",
+    "instagram_business_manage_messages",
+    "instagram_business_manage_comments",
+    "instagram_business_content_publish",
+    "instagram_business_manage_insights",
+]
+
 
 class InstagramOAuthProvider:
+    def __init__(self, settings: Settings) -> None:
+        self.settings = settings
+
     async def exchange_code(self, code: str) -> InstagramProfile:
-        return InstagramProfile(
-            ig_user_id=f"dev-{code}",
-            ig_username="connected.account",
-            access_token=f"dev-token-{code}",
-            scopes=["instagram_basic", "instagram_manage_messages"],
-        )
+        if (
+            not self.settings.instagram_app_id
+            or self.settings.instagram_app_id == "dev"
+            or not self.settings.instagram_app_secret
+            or self.settings.instagram_app_secret == "dev"
+        ):
+            # Fallback to dev profile in mock mode
+            return InstagramProfile(
+                ig_user_id=f"dev-{code}",
+                ig_username="connected.account",
+                access_token=f"dev-token-{code}",
+                scopes=INSTAGRAM_SCOPES,
+            )
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # Step 1: Exchange code for short-lived token via Instagram Business Login
+            token_res = await client.post(
+                "https://api.instagram.com/oauth/access_token",
+                data={
+                    "client_id": self.settings.instagram_app_id,
+                    "client_secret": self.settings.instagram_app_secret,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": self.settings.instagram_redirect_uri,
+                    "code": code,
+                },
+            )
+            if token_res.status_code != 200:
+                raise ApiError(
+                    status_code=400,
+                    code="ig_oauth_failed",
+                    message=f"Failed to exchange OAuth code: {token_res.text}",
+                )
+            token_data = token_res.json()
+            short_lived_token = token_data.get("access_token")
+            ig_user_id = str(token_data.get("user_id", ""))
+
+            if not short_lived_token or not ig_user_id:
+                raise ApiError(
+                    status_code=400,
+                    code="ig_oauth_failed",
+                    message="OAuth response did not return access_token or user_id",
+                )
+
+            # Step 2: Exchange for long-lived token (60-day)
+            long_token_res = await client.get(
+                "https://graph.instagram.com/access_token",
+                params={
+                    "grant_type": "ig_exchange_token",
+                    "client_secret": self.settings.instagram_app_secret,
+                    "access_token": short_lived_token,
+                },
+            )
+            if long_token_res.status_code != 200:
+                raise ApiError(
+                    status_code=400,
+                    code="ig_oauth_failed",
+                    message=f"Failed to get long-lived token: {long_token_res.text}",
+                )
+            long_lived_token = long_token_res.json().get("access_token", short_lived_token)
+
+            # Step 3: Fetch Instagram Business profile (username, name)
+            profile_res = await client.get(
+                f"https://graph.instagram.com/v25.0/{ig_user_id}",
+                params={
+                    "fields": "id,username,name,profile_picture_url",
+                    "access_token": long_lived_token,
+                },
+            )
+            if profile_res.status_code != 200:
+                raise ApiError(
+                    status_code=400,
+                    code="ig_oauth_failed",
+                    message=f"Failed to fetch Instagram profile: {profile_res.text}",
+                )
+            profile_data = profile_res.json()
+            ig_username = profile_data.get("username") or profile_data.get("name", "ig_user")
+
+            return InstagramProfile(
+                ig_user_id=ig_user_id,
+                ig_username=ig_username,
+                access_token=long_lived_token,
+                scopes=INSTAGRAM_SCOPES,
+            )
 
 
 class InstagramService:
@@ -33,7 +123,7 @@ class InstagramService:
     ) -> None:
         self.repository = repository
         self.settings = settings
-        self.provider = provider or InstagramOAuthProvider()
+        self.provider = provider or InstagramOAuthProvider(settings)
 
     async def start_oauth(self, user: CurrentUser) -> OAuthStartResponse:
         state = sign_state({"user_id": str(user.id)}, self.settings.instagram_app_secret or "dev")
@@ -42,12 +132,14 @@ class InstagramService:
                 "client_id": self.settings.instagram_app_id or "dev-instagram-app",
                 "redirect_uri": self.settings.instagram_redirect_uri,
                 "response_type": "code",
-                "scope": "instagram_basic,instagram_manage_messages",
+                "scope": ",".join(INSTAGRAM_SCOPES),
                 "state": state,
+                "force_reauth": "true",
             }
         )
+        # Instagram Business Login endpoint — shows Instagram login screen (not Facebook)
         return OAuthStartResponse(
-            url=f"https://api.instagram.com/oauth/authorize?{params}", state=state
+            url=f"https://www.instagram.com/oauth/authorize?{params}", state=state
         )
 
     async def complete_oauth(

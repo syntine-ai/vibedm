@@ -192,7 +192,13 @@ def configure_middlewares(app: FastAPI, settings: Settings) -> None:
         allow_origins=settings.allowed_origins or ["*"],
         allow_credentials=False,
         allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "Idempotency-Key", "X-Workspace-Id"],
+        allow_headers=[
+            "Authorization",
+            "Content-Type",
+            "Idempotency-Key",
+            "X-Workspace-Id",
+            "ngrok-skip-browser-warning",
+        ],
     )
 
     if settings.enable_gzip:

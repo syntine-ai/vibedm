@@ -8,6 +8,8 @@ from app.modules.webhooks.repositories.webhooks import WebhookRepository
 from app.security import verify_hmac_hex, verify_stripe_signature
 
 
+from uuid import UUID
+
 class WebhookService:
     def __init__(self, repository: WebhookRepository, settings: Settings) -> None:
         self.repository = repository
@@ -25,7 +27,150 @@ class WebhookService:
         payload = self._json_payload(body)
         external_id = str(payload.get("id") or payload.get("entry", [{}])[0].get("id") or "unknown")
         inserted = await self.repository.record_event("instagram", external_id, payload)
+        if inserted:
+            await self.process_instagram_event(payload)
         return {"received": True, "duplicate": not inserted}
+
+    async def process_instagram_event(self, payload: dict) -> None:
+        entries = payload.get("entry") or []
+        for entry in entries:
+            entry_id = str(entry.get("id") or "")
+            
+            # 1. Process DMs / Story replies
+            messagings = entry.get("messaging") or []
+            for msg_event in messagings:
+                await self._process_messaging_event(entry_id, msg_event)
+                
+            # 2. Process Comments
+            changes = entry.get("changes") or []
+            for change in changes:
+                field = change.get("field")
+                if field == "comments":
+                    await self._process_comment_event(entry_id, change.get("value") or {})
+
+    async def _process_messaging_event(self, entry_id: str, msg_event: dict) -> None:
+        sender_id = str(msg_event.get("sender", {}).get("id") or "")
+        recipient_id = str(msg_event.get("recipient", {}).get("id") or "")
+        
+        ig_user_id = recipient_id or entry_id
+        if not ig_user_id or not sender_id:
+            return
+            
+        if sender_id == ig_user_id:
+            return
+
+        workspace_id = await self.repository.find_workspace_by_ig_user(ig_user_id)
+        if not workspace_id:
+            return
+
+        message = msg_event.get("message") or {}
+        postback = msg_event.get("postback") or {}
+        
+        text_content = ""
+        is_story_reply = "reply_to" in message or "story" in message
+        
+        if postback:
+            text_content = str(postback.get("payload") or "")
+        elif message:
+            text_content = str(message.get("text") or "")
+            
+        if not text_content:
+            return
+
+        active_automations = await self.repository.list_active_automations(workspace_id)
+        for auto in active_automations:
+            trigger_type = auto.get("trigger_type")
+            trigger_config = auto.get("trigger_config") or {}
+            
+            if trigger_type == "dm" and not is_story_reply:
+                keywords = trigger_config.get("keywords") or []
+                match_mode = trigger_config.get("match") or "any"
+                if self._check_keywords(text_content, keywords, match_mode):
+                    await self._trigger_run(workspace_id, auto["id"], sender_id, None, text_content, msg_event)
+            elif trigger_type == "story_reply" and is_story_reply:
+                keywords = trigger_config.get("keywords") or []
+                match_mode = trigger_config.get("match") or "any"
+                if self._check_keywords(text_content, keywords, match_mode):
+                    await self._trigger_run(workspace_id, auto["id"], sender_id, None, text_content, msg_event)
+
+    async def _process_comment_event(self, entry_id: str, value: dict) -> None:
+        comment_id = str(value.get("id") or "")
+        comment_text = str(value.get("text") or "")
+        media_id = str(value.get("media", {}).get("id") or "")
+        sender = value.get("from") or {}
+        sender_id = str(sender.get("id") or "")
+        sender_username = str(sender.get("username") or "")
+        
+        if not comment_id or not comment_text or not sender_id:
+            return
+            
+        ig_user_id = entry_id
+        workspace_id = await self.repository.find_workspace_by_ig_user(ig_user_id)
+        if not workspace_id:
+            return
+
+        active_automations = await self.repository.list_active_automations(workspace_id)
+        for auto in active_automations:
+            trigger_type = auto.get("trigger_type")
+            trigger_config = auto.get("trigger_config") or {}
+            
+            if trigger_type == "comment_post":
+                conf_post_id = trigger_config.get("post_id")
+                if conf_post_id and str(conf_post_id) != media_id:
+                    continue
+                    
+                keywords = trigger_config.get("keywords") or []
+                match_mode = trigger_config.get("match") or "any"
+                if self._check_keywords(comment_text, keywords, match_mode):
+                    await self._trigger_run(
+                        workspace_id=workspace_id,
+                        automation_id=auto["id"],
+                        sender_id=sender_id,
+                        sender_username=sender_username,
+                        text_content=comment_text,
+                        raw_event={
+                            "comment_id": comment_id,
+                            "comment_text": comment_text,
+                            "media_id": media_id,
+                            "sender_id": sender_id,
+                            "sender_username": sender_username,
+                        },
+                    )
+
+    def _check_keywords(self, text: str, keywords: list[str], match_mode: str) -> bool:
+        if not keywords:
+            return True
+        text_lower = text.lower().strip()
+        if match_mode == "all":
+            return all(k.lower().strip() in text_lower for k in keywords)
+        else:
+            return any(k.lower().strip() in text_lower for k in keywords)
+
+    async def _trigger_run(
+        self,
+        workspace_id: UUID,
+        automation_id: UUID,
+        sender_id: str,
+        sender_username: str | None,
+        text_content: str,
+        raw_event: dict,
+    ) -> None:
+        contact_id = await self.repository.upsert_contact(
+            workspace_id=workspace_id,
+            ig_user_id=sender_id,
+            ig_username=sender_username,
+            source_automation_id=automation_id,
+        )
+        run_id = await self.repository.create_automation_run(
+            workspace_id=workspace_id,
+            automation_id=automation_id,
+            contact_id=contact_id,
+            trigger_event=raw_event,
+        )
+        await self.repository.enqueue_automation_job(
+            workspace_id=workspace_id,
+            automation_run_id=run_id,
+        )
 
     async def handle_stripe(self, body: bytes, signature: str | None) -> dict[str, bool]:
         if not signature or not verify_stripe_signature(

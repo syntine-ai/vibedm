@@ -26,9 +26,9 @@ class AutomationRepository:
                 from public.automations
                 where workspace_id = :workspace_id
                   and deleted_at is null
-                  and (:status is null or status::text = :status)
-                  and (:trigger_type is null or trigger_type::text = :trigger_type)
-                  and (:q is null or name ilike '%' || :q || '%')
+                  and (cast(:status as text) is null or status::text = :status)
+                  and (cast(:trigger_type as text) is null or trigger_type::text = :trigger_type)
+                  and (cast(:q as text) is null or name ilike '%' || :q || '%')
                 order by updated_at desc
                 """
             ),
@@ -88,9 +88,15 @@ class AutomationRepository:
         return dict(automation) | {"steps": [dict(row) for row in steps_result.mappings().all()]}
 
     async def replace(self, *, workspace_id: UUID, automation_id: UUID, data: dict) -> dict | None:
+        import json
+
         existing = await self.get_detail(workspace_id=workspace_id, automation_id=automation_id)
         if existing is None:
             return None
+
+        trigger_config = data.get("trigger_config")
+        if isinstance(trigger_config, (dict, list)):
+            trigger_config = json.dumps(trigger_config)
 
         await self.session.execute(
             text(
@@ -108,7 +114,7 @@ class AutomationRepository:
                 "automation_id": automation_id,
                 "name": data.get("name"),
                 "trigger_type": data.get("trigger_type"),
-                "trigger_config": data.get("trigger_config"),
+                "trigger_config": trigger_config,
             },
         )
         if data.get("steps") is not None:
@@ -120,6 +126,8 @@ class AutomationRepository:
                 step_order = step["order"] if isinstance(step, dict) else step.order
                 action_type = step["action_type"] if isinstance(step, dict) else step.action_type
                 config = step["config"] if isinstance(step, dict) else step.config
+                if isinstance(config, (dict, list)):
+                    config = json.dumps(config)
                 await self.session.execute(
                     text(
                         """
@@ -169,6 +177,8 @@ class AutomationRepository:
         await self.session.commit()
 
     async def create_run(self, *, workspace_id: UUID, automation_id: UUID, event: dict) -> dict:
+        import json
+        event_str = json.dumps(event) if isinstance(event, (dict, list)) else event
         result = await self.session.execute(
             text(
                 """
@@ -178,7 +188,7 @@ class AutomationRepository:
                 returning id, automation_id, status::text as status, trigger_event, step_trace
                 """
             ),
-            {"workspace_id": workspace_id, "automation_id": automation_id, "event": event},
+            {"workspace_id": workspace_id, "automation_id": automation_id, "event": event_str},
         )
         await self.session.commit()
         return dict(result.mappings().one())
@@ -196,3 +206,64 @@ class AutomationRepository:
             {"workspace_id": workspace_id, "automation_id": automation_id},
         )
         return [dict(row) for row in result.mappings().all()]
+
+    async def get_run(self, run_id: UUID) -> dict | None:
+        result = await self.session.execute(
+            text(
+                """
+                select id, workspace_id, automation_id, contact_id, status::text as status,
+                       trigger_event, step_trace
+                from public.automation_runs
+                where id = :run_id
+                """
+            ),
+            {"run_id": run_id},
+        )
+        row = result.mappings().first()
+        return dict(row) if row else None
+
+    async def get_workspace_token(self, workspace_id: UUID) -> str | None:
+        result = await self.session.execute(
+            text(
+                """
+                select access_token_enc
+                from public.instagram_connections
+                where workspace_id = :workspace_id
+                """
+            ),
+            {"workspace_id": workspace_id},
+        )
+        row = result.mappings().first()
+        if not row:
+            return None
+        return row["access_token_enc"].decode("utf-8")
+
+    async def update_run(
+        self,
+        run_id: UUID,
+        status: str,
+        step_trace: list,
+        error: str | None = None,
+    ) -> None:
+        import json
+        await self.session.execute(
+            text(
+                """
+                update public.automation_runs
+                   set status = :status,
+                       step_trace = :step_trace,
+                       error = :error,
+                       started_at = coalesce(started_at, now()),
+                       finished_at = now()
+                 where id = :run_id
+                """
+            ),
+            {
+                "run_id": run_id,
+                "status": status,
+                "step_trace": json.dumps(step_trace),
+                "error": error,
+            },
+        )
+        await self.session.commit()
+

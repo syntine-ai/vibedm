@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Query, Request
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Settings, get_settings
@@ -27,9 +28,9 @@ async def verify_instagram(
     mode: Annotated[str | None, Query(alias="hub.mode")] = None,
     token: Annotated[str | None, Query(alias="hub.verify_token")] = None,
     challenge: Annotated[str | None, Query(alias="hub.challenge")] = None,
-) -> str:
+) -> PlainTextResponse:
     if mode == "subscribe" and token == settings.instagram_verify_token and challenge:
-        return challenge
+        return PlainTextResponse(content=challenge)
     raise ApiError(
         status_code=403, code="verification_failed", message="Webhook verification failed"
     )

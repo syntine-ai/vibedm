@@ -9,23 +9,83 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import jwt
+from jwt import PyJWKClient
 
 from app.config import Settings
 from app.core.errors import ApiError
 
 
+_jwks_client: PyJWKClient | None = None
+
+def get_jwks_client(supabase_url: str) -> PyJWKClient:
+    global _jwks_client
+    if _jwks_client is None:
+        jwks_url = f"{supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
+        _jwks_client = PyJWKClient(jwks_url)
+    return _jwks_client
+
 def decode_supabase_jwt(token: str, settings: Settings) -> dict[str, Any]:
     try:
+        header = jwt.get_unverified_header(token)
+        alg = header.get("alg", "HS256")
+    except Exception as e:
+        print(f"\n[JWT Header Debug Error]: {e}\n")
+        alg = "HS256"
+
+    # Support modern ES256 asymmetric signatures used by newer Supabase projects
+    if alg == "ES256":
+        try:
+            jwks_client = get_jwks_client(settings.supabase_url)
+            signing_key = jwks_client.get_signing_key_from_jwt(token)
+            return jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=["ES256"],
+                options={"verify_aud": False},
+            )
+        except Exception as exc:
+            print(f"\n[JWT ES256 Auth Error]: {exc}\n")
+            raise ApiError(
+                status_code=401, code="unauthorized", message=f"Invalid bearer token (ES256): {exc}"
+            ) from exc
+
+    # Fallback to legacy HS256 symmetric signature
+    secret = settings.supabase_jwt_secret
+    
+    # Supabase JWT secrets are base64-encoded. We attempt to base64-decode it,
+    # falling back to the literal string if decoding fails or isn't needed.
+    decoded_secret = None
+    try:
+        # Standard base64 decoding
+        decoded_secret = base64.b64decode(secret)
+    except Exception:
+        pass
+
+    try:
+        if decoded_secret:
+            try:
+                return jwt.decode(
+                    token,
+                    decoded_secret,
+                    algorithms=["HS256"],
+                    options={"verify_aud": False},
+                )
+            except jwt.PyJWTError:
+                # If decoded secret failed to verify signature, fall back to literal secret
+                pass
+                
         return jwt.decode(
             token,
-            settings.supabase_jwt_secret,
+            secret,
             algorithms=["HS256"],
             options={"verify_aud": False},
         )
     except jwt.PyJWTError as exc:
+        print(f"\n[JWT HS256 Auth Error]: {exc}\n")
         raise ApiError(
-            status_code=401, code="unauthorized", message="Invalid bearer token"
+            status_code=401, code="unauthorized", message=f"Invalid bearer token (HS256): {exc}"
         ) from exc
+
 
 
 def parse_uuid_claim(value: Any, claim_name: str) -> UUID:
