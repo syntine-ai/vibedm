@@ -34,7 +34,22 @@ function InstagramCallbackPage() {
         const me = await authApi.me();
         queryClient.setQueryData(queryKeys.authMe, me);
         await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces });
-        navigate({ to: response.redirect_to || "/dashboard", replace: true });
+        
+        const targetUrl = response.redirect_to || "/dashboard";
+
+        if (window.opener && !window.opener.closed) {
+          try {
+            // Redirect the main/parent tab to the dashboard
+            window.opener.location.href = targetUrl;
+          } catch (e) {
+            console.error("Failed to redirect parent window:", e);
+          }
+          // Close the popup window automatically
+          window.close();
+        } else {
+          // Fallback if not opened in a popup
+          navigate({ to: targetUrl, replace: true });
+        }
       })
       .catch((callbackError) => {
         setError(
