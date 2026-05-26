@@ -16,6 +16,17 @@ Run the background worker in a separate terminal:
 uv run python -m app.worker
 ```
 
+Production request middleware is configured with these environment variables:
+
+- `ALLOWED_HOSTS`
+- `ENABLE_PROXY_HEADERS`
+- `TRUSTED_PROXY_IPS`
+- `MAX_REQUEST_BODY_BYTES`
+- `ENABLE_GZIP`
+- `GZIP_MINIMUM_SIZE`
+- `LOG_LEVEL`
+- `LOG_JSON`
+
 Health check:
 
 ```powershell

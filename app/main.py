@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 from typing import Any, cast
-from uuid import uuid4
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import get_settings
@@ -16,6 +14,7 @@ from app.core.errors import (
     unhandled_error_handler,
     validation_error_handler,
 )
+from app.core.middleware import configure_middlewares
 from app.modules.auth.routers.auth import router as auth_router
 from app.modules.automations.routers.automations import router as automations_router
 from app.modules.billing.routers.billing import router as billing_router
@@ -35,21 +34,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RequestValidationError, cast(Any, validation_error_handler))
     app.add_exception_handler(Exception, unhandled_error_handler)
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.allowed_origins or ["*"],
-        allow_credentials=False,
-        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "Idempotency-Key", "X-Workspace-Id"],
-    )
-
-    @app.middleware("http")
-    async def request_id_middleware(request: Request, call_next):
-        request_id = request.headers.get(settings.request_id_header) or str(uuid4())
-        request.state.request_id = request_id
-        response = await call_next(request)
-        response.headers[settings.request_id_header.lower()] = request_id
-        return response
+    configure_middlewares(app, settings)
 
     @app.get("/health", tags=["system"])
     async def health() -> dict[str, str]:

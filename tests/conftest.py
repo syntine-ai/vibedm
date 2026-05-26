@@ -23,6 +23,7 @@ def reset_settings_cache(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "service-role")
     monkeypatch.setenv("SUPABASE_JWT_SECRET", TEST_SECRET)
     monkeypatch.setenv("FRONTEND_ORIGIN", "http://localhost:3000")
+    monkeypatch.setenv("ALLOWED_HOSTS", "test,localhost,127.0.0.1")
     get_settings.cache_clear()
 
 
