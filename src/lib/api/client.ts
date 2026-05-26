@@ -89,6 +89,11 @@ export function createApiClient({
     const workspaceId = options.workspaceId ?? getActiveWorkspaceId();
     const headers = new Headers(options.headers);
 
+    // Skip ngrok's browser interstitial warning page which strips CORS headers
+    if (baseUrl.includes("ngrok")) {
+      headers.set("ngrok-skip-browser-warning", "1");
+    }
+
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
     }
