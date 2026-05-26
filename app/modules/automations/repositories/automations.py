@@ -117,6 +117,9 @@ class AutomationRepository:
                 {"automation_id": automation_id},
             )
             for step in data["steps"]:
+                step_order = step["order"] if isinstance(step, dict) else step.order
+                action_type = step["action_type"] if isinstance(step, dict) else step.action_type
+                config = step["config"] if isinstance(step, dict) else step.config
                 await self.session.execute(
                     text(
                         """
@@ -127,9 +130,9 @@ class AutomationRepository:
                     ),
                     {
                         "automation_id": automation_id,
-                        "step_order": step.order,
-                        "action_type": step.action_type,
-                        "config": step.config,
+                        "step_order": step_order,
+                        "action_type": action_type,
+                        "config": config,
                     },
                 )
         await self.session.commit()
