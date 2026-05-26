@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
 import { useState } from "react";
-import { user } from "@/lib/mock-data";
-import { Instagram } from "lucide-react";
+import { user, initialWorkspaces, type Workspace } from "@/lib/mock-data";
+import { Instagram, Plus, Check, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — DMFlow" }] }),
   component: SettingsPage,
 });
 
-const tabs = ["General", "Instagram Accounts"] as const;
+const tabs = ["General", "Instagram Accounts", "Workspaces"] as const;
 
 function SettingsPage() {
   const [tab, setTab] = useState<(typeof tabs)[number]>("General");
