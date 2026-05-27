@@ -9,8 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ReturnAndRefundPolicyRouteImport } from './routes/return-and-refund-policy'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -21,6 +23,11 @@ import { Route as AutomationsIndexRouteImport } from './routes/automations.index
 import { Route as AutomationsIdEditRouteImport } from './routes/automations.$id.edit'
 import { Route as AuthInstagramCallbackRouteImport } from './routes/auth.instagram.callback'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -29,6 +36,11 @@ const SignupRoute = SignupRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReturnAndRefundPolicyRoute = ReturnAndRefundPolicyRouteImport.update({
+  id: '/return-and-refund-policy',
+  path: '/return-and-refund-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -84,8 +96,10 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/return-and-refund-policy': typeof ReturnAndRefundPolicyRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/automations/': typeof AutomationsIndexRoute
   '/auth/instagram/callback': typeof AuthInstagramCallbackRoute
   '/automations/$id/edit': typeof AutomationsIdEditRoute
@@ -96,8 +110,10 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/return-and-refund-policy': typeof ReturnAndRefundPolicyRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/automations': typeof AutomationsIndexRoute
   '/auth/instagram/callback': typeof AuthInstagramCallbackRoute
   '/automations/$id/edit': typeof AutomationsIdEditRoute
@@ -110,8 +126,10 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/return-and-refund-policy': typeof ReturnAndRefundPolicyRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/automations/': typeof AutomationsIndexRoute
   '/auth/instagram/callback': typeof AuthInstagramCallbackRoute
   '/automations/$id/edit': typeof AutomationsIdEditRoute
@@ -125,8 +143,10 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/privacy'
+    | '/return-and-refund-policy'
     | '/settings'
     | '/signup'
+    | '/terms'
     | '/automations/'
     | '/auth/instagram/callback'
     | '/automations/$id/edit'
@@ -137,8 +157,10 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/privacy'
+    | '/return-and-refund-policy'
     | '/settings'
     | '/signup'
+    | '/terms'
     | '/automations'
     | '/auth/instagram/callback'
     | '/automations/$id/edit'
@@ -150,8 +172,10 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/privacy'
+    | '/return-and-refund-policy'
     | '/settings'
     | '/signup'
+    | '/terms'
     | '/automations/'
     | '/auth/instagram/callback'
     | '/automations/$id/edit'
@@ -164,13 +188,22 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
+  ReturnAndRefundPolicyRoute: typeof ReturnAndRefundPolicyRoute
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
+  TermsRoute: typeof TermsRoute
   AuthInstagramCallbackRoute: typeof AuthInstagramCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -183,6 +216,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/return-and-refund-policy': {
+      id: '/return-and-refund-policy'
+      path: '/return-and-refund-policy'
+      fullPath: '/return-and-refund-policy'
+      preLoaderRoute: typeof ReturnAndRefundPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -272,8 +312,10 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
+  ReturnAndRefundPolicyRoute: ReturnAndRefundPolicyRoute,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
+  TermsRoute: TermsRoute,
   AuthInstagramCallbackRoute: AuthInstagramCallbackRoute,
 }
 export const routeTree = rootRouteImport

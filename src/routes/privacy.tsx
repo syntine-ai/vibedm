@@ -9,16 +9,16 @@ export const Route = createFileRoute("/privacy")({
 
 function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="px-10 py-8 max-w-[1000px] mx-auto">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="px-10 py-12 max-w-4xl mx-auto">
         <div className="mb-8">
           <Link
-            to="/login"
-            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition mb-4"
+            to="/"
+            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
-            <ArrowLeft className="size-4" /> Back
+            <ArrowLeft className="size-4" /> Back to Home
           </Link>
-          <h1 className="text-3xl font-bold">Privacy Policy</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight">Privacy Policy</h1>
           <p className="text-muted-foreground mt-2">Last updated: May 27, 2026</p>
         </div>
 
@@ -28,23 +28,21 @@ function PrivacyPolicy() {
             disclosure of Your information when You use the Service and tells You about Your privacy
             rights and how the law protects You.
           </p>
-
           <p>
             We use Your Personal data to provide and improve the Service. By using the Service, You
             agree to the collection and use of information in accordance with this Privacy Policy.
-            This Privacy Policy has been created with the help of the Privacy Policy Generator.
           </p>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Interpretation and Definitions</h2>
+          <h3 className="text-2xl font-bold mt-8 mb-4">Interpretation and Definitions</h3>
 
-          <h3 className="text-lg font-semibold mt-6 mb-3">Interpretation</h3>
+          <h4 className="text-xl font-semibold mt-6 mb-3">Interpretation</h4>
           <p>
             The words of which the initial letter is capitalized have meanings defined under the
             following conditions. The following definitions shall have the same meaning regardless of
             whether they appear in singular or in plural.
           </p>
 
-          <h3 className="text-lg font-semibold mt-6 mb-3">Definitions</h3>
+          <h4 className="text-xl font-semibold mt-6 mb-3">Definitions</h4>
           <p>For the purposes of this Privacy Policy:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li>
@@ -53,14 +51,13 @@ function PrivacyPolicy() {
             </li>
             <li>
               <strong>Affiliate</strong> means an entity that controls, is controlled by or is under
-              common control with a party, where "control" means ownership of 50% or more of the
+              common control with a party, where “control” means ownership of 50% or more of the
               shares, equity interest or other securities entitled to vote for election of directors
               or other managing authority.
             </li>
             <li>
-              <strong>Company</strong> (referred to as either "the Company", "We", "Us" or "Our" in
-              this Agreement) refers to Startlight Solutions, B-405, SG Homes, Vasundhara Sector – 3,
-              Uttar Pradesh, Ghaziabad.
+              <strong>Company</strong> (referred to as either “the Company”, “We”, “Us” or “Our” in
+              this Agreement) refers to <strong>Syntine Labs</strong>.
             </li>
             <li>
               <strong>Cookies</strong> are small files that are placed on Your computer, mobile device
@@ -68,7 +65,7 @@ function PrivacyPolicy() {
               that website among its many uses.
             </li>
             <li>
-              <strong>Country</strong> refers to: Uttar Pradesh, India
+              <strong>Country</strong> refers to: India.
             </li>
             <li>
               <strong>Device</strong> means any device that can access the Service such as a computer,
@@ -98,7 +95,7 @@ function PrivacyPolicy() {
               duration of a page visit).
             </li>
             <li>
-              <strong>Website</strong> refers to Vibe DM, accessible from our official domains.
+              <strong>Website</strong> refers to <strong>Vibe DM</strong>, accessible from <strong><a href="https://vibedm.syntine.com">https://vibedm.syntine.com</a></strong>
             </li>
             <li>
               <strong>You</strong> means the individual accessing or using the Service, or the
@@ -107,11 +104,11 @@ function PrivacyPolicy() {
             </li>
           </ul>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Collecting and Using Your Personal Data</h2>
+          <h3 className="text-2xl font-bold mt-8 mb-4">Collecting and Using Your Personal Data</h3>
 
-          <h3 className="text-lg font-semibold mt-6 mb-3">Types of Data Collected</h3>
+          <h4 className="text-xl font-semibold mt-6 mb-3">Types of Data Collected</h4>
 
-          <h4 className="font-semibold mt-4 mb-2">Personal Data</h4>
+          <h5 className="font-semibold mt-4 mb-2">Personal Data</h5>
           <p>
             While using Our Service, We may ask You to provide Us with certain personally identifiable
             information that can be used to contact or identify You. Personally identifiable
@@ -125,10 +122,10 @@ function PrivacyPolicy() {
             <li>Usage Data</li>
           </ul>
 
-          <h4 className="font-semibold mt-4 mb-2">Usage Data</h4>
+          <h5 className="font-semibold mt-4 mb-2">Usage Data</h5>
           <p>Usage Data is collected automatically when using the Service.</p>
           <p>
-            Usage Data may include information such as Your Device's Internet Protocol address (e.g.
+            Usage Data may include information such as Your Device’s Internet Protocol address (e.g.
             IP address), browser type, browser version, the pages of our Service that You visit, the
             time and date of Your visit, the time spent on those pages, unique device identifiers and
             other diagnostic data.
@@ -145,35 +142,32 @@ function PrivacyPolicy() {
             when You access the Service by or through a mobile device.
           </p>
 
-          <h3 className="text-lg font-semibold mt-6 mb-3">
-            Information from Third-Party Social Media Services
-          </h3>
+          <h4 className="text-xl font-semibold mt-6 mb-3">Information from Third-Party Social Media Services</h4>
           <p>
-            The Company allows You to create an account and log in to use the Service through the
-            following Third-party Social Media Services:
+            The Company allows You to create an account and log in to use the Service through
+            Third-party Social Media Services, specifically integrating:
           </p>
           <ul className="list-disc pl-6 space-y-1">
+            <li><strong>Facebook Login for Business</strong></li>
             <li>Google</li>
-            <li>Facebook</li>
-            <li>Instagram</li>
-            <li>Twitter</li>
             <li>LinkedIn</li>
+            <li>Twitter</li>
           </ul>
           <p className="mt-4">
             If You decide to register through or otherwise grant us access to a Third-Party Social
             Media Service, We may collect Personal data that is already associated with Your
-            Third-Party Social Media Service's account, such as Your name, Your email address, Your
+            Third-Party Social Media Service’s account, such as Your name, Your email address, Your
             activities or Your contact list associated with that account.
           </p>
           <p>
             You may also have the option of sharing additional information with the Company through
-            Your Third-Party Social Media Service's account. If You choose to provide such
+            Your Third-Party Social Media Service’s account. If You choose to provide such
             information and Personal Data, during registration or otherwise, You are giving the
             Company permission to use, share, and store it in a manner consistent with this Privacy
             Policy.
           </p>
 
-          <h3 className="text-lg font-semibold mt-6 mb-3">Tracking Technologies and Cookies</h3>
+          <h4 className="text-xl font-semibold mt-6 mb-3">Tracking Technologies and Cookies</h4>
           <p>
             We use Cookies and similar tracking technologies to track the activity on Our Service and
             store certain information. Tracking technologies used are beacons, tags, and scripts to
@@ -182,28 +176,57 @@ function PrivacyPolicy() {
           </p>
           <ul className="list-disc pl-6 space-y-2">
             <li>
-              <strong>Cookies or Browser Cookies.</strong> A cookie is a small file placed on Your
-              Device. You can instruct Your browser to refuse all Cookies or to indicate when a Cookie
-              is being sent. However, if You do not accept Cookies, You may not be able to use some
-              parts of our Service. Unless you have adjusted Your browser setting so that it will
-              refuse Cookies, our Service may use Cookies.
+              <strong>Cookies or Browser Cookies:</strong> A cookie is a small file placed on Your
+              Device. You can instruct Your browser to refuse all Cookies or to indicate when a
+              Cookie is being sent. However, if You do not accept Cookies, You may not be able to
+              use some parts of our Service. Unless you have adjusted Your browser setting so that
+              it will refuse Cookies, our Service may use Cookies.
             </li>
             <li>
-              <strong>Web Beacons.</strong> Certain sections of our Service and our emails may contain
-              small electronic files known as web beacons (also referred to as clear gifs, pixel tags,
-              and single-pixel gifs) that permit the Company, for example, to count users who have
-              visited those pages or opened an email and for other related website statistics (for
-              example, recording the popularity of a certain section and verifying system and server
-              integrity).
+              <strong>Web Beacons:</strong> Certain sections of our Service and our emails may
+              contain small electronic files known as web beacons (also referred to as clear gifs,
+              pixel tags, and single-pixel gifs) that permit the Company, for example, to count
+              users who have visited those pages or opened an email and for other related website
+              statistics (for example, recording the popularity of a certain section and verifying
+              system and server integrity).
             </li>
           </ul>
           <p className="mt-4">
-            Cookies can be "Persistent" or "Session" Cookies. Persistent Cookies remain on Your
+            Cookies can be “Persistent” or “Session” Cookies. Persistent Cookies remain on Your
             personal computer or mobile device when You go offline, while Session Cookies are deleted
             as soon as You close Your web browser.
           </p>
+          <p>We use both Session and Persistent Cookies for the purposes set out below:</p>
+          <ul className="list-disc pl-6 space-y-2">
+            <li>
+              <strong>Necessary / Essential Cookies</strong><br />
+              <em>Type:</em> Session Cookies<br />
+              <em>Administered by:</em> Us<br />
+              <em>Purpose:</em> These Cookies are essential to provide You with services available
+              through the Website and to enable You to use some of its features. They help to
+              authenticate users and prevent fraudulent use of user accounts. Without these Cookies,
+              the services that You have asked for cannot be provided, and We only use these Cookies
+              to provide You with those services.
+            </li>
+            <li>
+              <strong>Cookies Policy / Notice Acceptance Cookies</strong><br />
+              <em>Type:</em> Persistent Cookies<br />
+              <em>Administered by:</em> Us<br />
+              <em>Purpose:</em> These Cookies identify if users have accepted the use of cookies on
+              the Website.
+            </li>
+            <li>
+              <strong>Functionality Cookies</strong><br />
+              <em>Type:</em> Persistent Cookies<br />
+              <em>Administered by:</em> Us<br />
+              <em>Purpose:</em> These Cookies allow us to remember choices You make when You use the
+              Website, such as remembering your login details or language preference. The purpose of
+              these Cookies is to provide You with a more personal experience and to avoid You having
+              to re-enter your preferences every time You use the Website.
+            </li>
+          </ul>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Use of Your Personal Data</h2>
+          <h3 className="text-2xl font-bold mt-8 mb-4">Use of Your Personal Data</h3>
           <p>The Company may use Personal Data for the following purposes:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li>
@@ -222,13 +245,13 @@ function PrivacyPolicy() {
             </li>
             <li>
               <strong>To contact You:</strong> To contact You by email, telephone calls, SMS, or other
-              equivalent forms of electronic communication, such as a mobile application's push
+              equivalent forms of electronic communication, such as a mobile application’s push
               notifications regarding updates or informative communications related to the
               functionalities, products or contracted services, including the security updates, when
               necessary or reasonable for their implementation.
             </li>
             <li>
-              <strong>To provide You</strong> with news, special offers and general information about
+              <strong>To provide You with news, special offers and general information</strong> about
               other goods, services and events which we offer that are similar to those that you have
               already purchased or enquired about unless You have opted not to receive such
               information.
@@ -251,9 +274,7 @@ function PrivacyPolicy() {
             </li>
           </ul>
 
-          <h3 className="text-lg font-semibold mt-6 mb-3">
-            We may share Your personal information in the following situations:
-          </h3>
+          <h4 className="text-xl font-semibold mt-6 mb-3">We may share Your personal information in the following situations:</h4>
           <ul className="list-disc pl-6 space-y-2">
             <li>
               <strong>With Service Providers:</strong> We may share Your personal information with
@@ -262,8 +283,7 @@ function PrivacyPolicy() {
             <li>
               <strong>For business transfers:</strong> We may share or transfer Your personal
               information in connection with, or during negotiations of, any merger, sale of Company
-              assets, financing, or acquisition of all or a portion of Our business to another
-              company.
+              assets, financing, or acquisition of all or a portion of Our business to another company.
             </li>
             <li>
               <strong>With Affiliates:</strong> We may share Your information with Our affiliates, in
@@ -290,7 +310,7 @@ function PrivacyPolicy() {
             </li>
           </ul>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Retention of Your Personal Data</h2>
+          <h3 className="text-2xl font-bold mt-8 mb-4">Retention of Your Personal Data</h3>
           <p>
             The Company will retain Your Personal Data only for as long as is necessary for the
             purposes set out in this Privacy Policy. We will retain and use Your Personal Data to the
@@ -305,9 +325,9 @@ function PrivacyPolicy() {
             obligated to retain this data for longer time periods.
           </p>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Transfer of Your Personal Data</h2>
+          <h3 className="text-2xl font-bold mt-8 mb-4">Transfer of Your Personal Data</h3>
           <p>
-            Your information, including Personal Data, is processed at the Company's operating offices
+            Your information, including Personal Data, is processed at the Company’s operating offices
             and in any other places where the parties involved in the processing are located. It means
             that this information may be transferred to — and maintained on — computers located
             outside of Your state, province, country or other governmental jurisdiction where the data
@@ -324,14 +344,11 @@ function PrivacyPolicy() {
             place including the security of Your data and other personal information.
           </p>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Delete Your Personal Data</h2>
+          <h3 className="text-2xl font-bold mt-8 mb-4">Delete Your Personal Data</h3>
           <p>
             You have the right to delete or request that We assist in deleting the Personal Data that
-            We have collected about You.
-          </p>
-          <p>
-            Our Service may give You the ability to delete certain information about You from within
-            the Service.
+            We have collected about You. Our Service may give You the ability to delete certain
+            information about You from within the Service.
           </p>
           <p>
             You may update, amend, or delete Your information at any time by signing in to Your
@@ -344,23 +361,23 @@ function PrivacyPolicy() {
             obligation or lawful basis to do so.
           </p>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Disclosure of Your Personal Data</h2>
+          <h3 className="text-2xl font-bold mt-8 mb-4">Disclosure of Your Personal Data</h3>
 
-          <h3 className="text-lg font-semibold mt-6 mb-3">Business Transactions</h3>
+          <h4 className="text-xl font-semibold mt-6 mb-3">Business Transactions</h4>
           <p>
             If the Company is involved in a merger, acquisition or asset sale, Your Personal Data may
             be transferred. We will provide notice before Your Personal Data is transferred and
             becomes subject to a different Privacy Policy.
           </p>
 
-          <h3 className="text-lg font-semibold mt-6 mb-3">Law enforcement</h3>
+          <h4 className="text-xl font-semibold mt-6 mb-3">Law enforcement</h4>
           <p>
             Under certain circumstances, the Company may be required to disclose Your Personal Data if
             required to do so by law or in response to valid requests by public authorities (e.g. a
             court or a government agency).
           </p>
 
-          <h3 className="text-lg font-semibold mt-6 mb-3">Other legal requirements</h3>
+          <h4 className="text-xl font-semibold mt-6 mb-3">Other legal requirements</h4>
           <p>
             The Company may disclose Your Personal Data in the good faith belief that such action is
             necessary to:
@@ -373,7 +390,7 @@ function PrivacyPolicy() {
             <li>Protect against legal liability</li>
           </ul>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Security of Your Personal Data</h2>
+          <h3 className="text-2xl font-bold mt-8 mb-4">Security of Your Personal Data</h3>
           <p>
             The security of Your Personal Data is important to Us, but remember that no method of
             transmission over the Internet, or method of electronic storage is 100% secure. While We
@@ -381,7 +398,7 @@ function PrivacyPolicy() {
             guarantee its absolute security.
           </p>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Children's Privacy</h2>
+          <h3 className="text-2xl font-bold mt-8 mb-4">Children’s Privacy</h3>
           <p>
             Our Service does not address anyone under the age of 13. We do not knowingly collect
             personally identifiable information from anyone under the age of 13. If You are a parent
@@ -392,14 +409,14 @@ function PrivacyPolicy() {
           </p>
           <p>
             If We need to rely on consent as a legal basis for processing Your information and Your
-            country requires consent from a parent, We may require Your parent's consent before We
+            country requires consent from a parent, We may require Your parent’s consent before We
             collect and use that information.
           </p>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Links to Other Websites</h2>
+          <h3 className="text-2xl font-bold mt-8 mb-4">Links to Other Websites</h3>
           <p>
             Our Service may contain links to other websites that are not operated by Us. If You click
-            on a third party link, You will be directed to that third party's site. We strongly advise
+            on a third party link, You will be directed to that third party’s site. We strongly advise
             You to review the Privacy Policy of every site You visit.
           </p>
           <p>
@@ -407,20 +424,26 @@ function PrivacyPolicy() {
             practices of any third party sites or services.
           </p>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Changes to this Privacy Policy</h2>
+          <h3 className="text-2xl font-bold mt-8 mb-4">Changes to this Privacy Policy</h3>
           <p>
             We may update Our Privacy Policy from time to time. We will notify You of any changes by
             posting the new Privacy Policy on this page.
           </p>
           <p>
             We will let You know via email and/or a prominent notice on Our Service, prior to the
-            change becoming effective and update the "Last updated" date at the top of this Privacy
+            change becoming effective and update the “Last updated” date at the top of this Privacy
             Policy.
           </p>
           <p>
             You are advised to review this Privacy Policy periodically for any changes. Changes to
             this Privacy Policy are effective when they are posted on this page.
           </p>
+
+          <h3 className="text-2xl font-bold mt-8 mb-4">Contact Us</h3>
+          <p>If you have any questions about this Privacy Policy, You can contact us:</p>
+          <ul className="list-disc pl-6 space-y-1">
+            <li><strong>By email:</strong> hello@syntine.com</li>
+          </ul>
         </div>
       </div>
     </div>

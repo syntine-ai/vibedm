@@ -16,7 +16,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { useAuthMeQuery, useSessionQuery } from "@/lib/api/hooks";
 import { supabase } from "@/integrations/supabase/client";
 
-const AUTH_ROUTES = ["/login", "/signup", "/forgot-password", "/auth/instagram/callback", "/privacy"];
+
 
 function NotFoundComponent() {
   return (
@@ -134,11 +134,21 @@ function RootComponent() {
   );
 }
 
+const PUBLIC_ROUTES = [
+  "/",
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/privacy",
+  "/terms",
+  "/return-and-refund-policy",
+];
+
 function AppFrame() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isAuth = AUTH_ROUTES.some((p) => pathname.startsWith(p));
+  const isPublic = PUBLIC_ROUTES.includes(pathname) || pathname.startsWith("/auth/instagram/callback");
 
-  if (isAuth) {
+  if (isPublic) {
     return <Outlet />;
   }
 
