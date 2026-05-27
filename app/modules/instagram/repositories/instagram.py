@@ -154,3 +154,18 @@ class InstagramRepository:
         )
         await self.session.commit()
 
+    async def get_connection(self, workspace_id: UUID) -> dict | None:
+        result = await self.session.execute(
+            text(
+                """
+                select workspace_id, ig_user_id, ig_username, access_token_enc, scopes
+                from public.instagram_connections
+                where workspace_id = :workspace_id
+                """
+            ),
+            {"workspace_id": workspace_id},
+        )
+        row = result.mappings().first()
+        return dict(row) if row else None
+
+

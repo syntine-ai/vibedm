@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from urllib.parse import urlencode
 from uuid import UUID
 import httpx
@@ -222,3 +223,49 @@ class InstagramService:
             raise ApiError(status_code=403, code="forbidden", message="Admin role required")
         await self.repository.disconnect(workspace.id)
         return {"disconnected": True}
+
+    async def get_media(self, workspace_id: UUID, limit: int = 10, after: str | None = None) -> dict:
+        connection = await self.repository.get_connection(workspace_id)
+        if not connection:
+            raise ApiError(status_code=400, code="not_connected", message="Instagram not connected to this workspace")
+
+        ig_user_id = connection["ig_user_id"]
+        token = connection["access_token_enc"].decode("utf-8")
+
+        if not token or token.startswith("dev-token") or token == "dev":
+            # Return premium mock media in development mode
+            mock_data = [
+                {
+                    "id": f"mock-media-{i}",
+                    "caption": f"This is a premium mock Reel #{i} talking about automations! 🚀 #vibedm #socialmedia",
+                    "media_type": "VIDEO" if i % 3 == 0 else "IMAGE",
+                    "media_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80" if i % 3 != 0 else "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&q=80",
+                    "thumbnail_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80" if i % 3 != 0 else "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&q=80",
+                    "permalink": "https://instagram.com",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+                for i in range(1, limit + 1)
+            ]
+            return {
+                "data": mock_data,
+                "paging": {"cursors": {"after": "mock-cursor"} if after is None else None}
+            }
+
+        # Fetch from Instagram Graph API
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            params = {
+                "fields": "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp",
+                "limit": limit,
+                "access_token": token,
+            }
+            if after:
+                params["after"] = after
+
+            res = await client.get(
+                f"https://graph.instagram.com/v25.0/{ig_user_id}/media",
+                params=params
+            )
+            if res.status_code != 200:
+                raise ApiError(status_code=400, code="meta_api_failed", message=f"Meta API failed: {res.text}")
+            return res.json()
+

@@ -70,5 +70,16 @@ async def disconnect_instagram(
     return await service.disconnect(workspace)
 
 
+@instagram_router.get("/media")
+async def get_instagram_media(
+    workspace: Annotated[WorkspaceContext, Depends(get_workspace_context)],
+    service: Annotated[InstagramService, Depends(get_instagram_service)],
+    limit: int = 10,
+    after: str | None = None,
+) -> dict:
+    return await service.get_media(workspace.id, limit=limit, after=after)
+
+
+
 router.include_router(instagram_router)
 router.include_router(workspace_router)
