@@ -1,6 +1,6 @@
 # Vibedm Backend
 
-FastAPI backend for the Vibedm/DMFlow app.
+FastAPI backend for the Vibedm/Vibe DM app.
 
 ## Local setup
 

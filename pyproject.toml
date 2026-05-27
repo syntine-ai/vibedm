@@ -1,7 +1,7 @@
 [project]
 name = "vibedm-backend"
 version = "0.1.0"
-description = "FastAPI backend for Vibedm/DMFlow"
+description = "FastAPI backend for Vibedm/Vibe DM"
 requires-python = ">=3.11,<3.15"
 dependencies = [
   "asyncpg>=0.30.0",
