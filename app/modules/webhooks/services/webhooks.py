@@ -43,7 +43,24 @@ class WebhookService:
                     status_code=401, code="invalid_signature", message="Invalid signature"
                 )
         payload = self._json_payload(body)
-        external_id = str(payload.get("id") or payload.get("entry", [{}])[0].get("id") or "unknown")
+        
+        # Extract a truly unique external_id to prevent deduplicating different messages/comments
+        external_id = "unknown"
+        entry = payload.get("entry", [{}])[0] if payload.get("entry") else {}
+        
+        # 1. Try to get DM message ID
+        messagings = entry.get("messaging", [{}])
+        if messagings and "message" in messagings[0]:
+            external_id = messagings[0]["message"].get("mid") or "unknown"
+        # 2. Try to get comment ID
+        elif entry.get("changes"):
+            change_val = entry["changes"][0].get("value", {})
+            external_id = change_val.get("id") or "unknown"
+            
+        # Fallback to entry.id or payload.id if no message or comment ID is found
+        if external_id == "unknown":
+            external_id = str(payload.get("id") or entry.get("id") or "unknown")
+
         inserted = await self.repository.record_event("instagram", external_id, payload)
         if inserted:
             await self.process_instagram_event(payload)

@@ -84,7 +84,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                         else:
                             # v25.0 Messages API call
                             res = await client.post(
-                                "https://graph.facebook.com/v25.0/me/messages",
+                                "https://graph.instagram.com/v25.0/me/messages",
                                 params={"access_token": token},
                                 json={
                                     "recipient": {"id": sender_id},
@@ -107,7 +107,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                         else:
                             # v25.0 Comment Reply API call
                             res = await client.post(
-                                f"https://graph.facebook.com/v25.0/{comment_id}/replies",
+                                f"https://graph.instagram.com/v25.0/{comment_id}/replies",
                                 params={"access_token": token},
                                 json={"message": reply_text}
                             )
@@ -126,7 +126,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                 step_entry["status"] = "succeeded"
                             else:
                                 res = await client.post(
-                                    "https://graph.facebook.com/v25.0/me/messages",
+                                    "https://graph.instagram.com/v25.0/me/messages",
                                     params={"access_token": token},
                                     json={
                                         "recipient": {"id": sender_id},

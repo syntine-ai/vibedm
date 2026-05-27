@@ -55,6 +55,8 @@ async def dispatch_job(job: JobRecord) -> dict[str, Any]:
 async def run_worker() -> None:
     settings = get_settings()
     worker_id = build_worker_id()
+    print(f"\n🚀 [Worker] Starting background job worker '{worker_id}'...")
+    print(f"📡 [Worker] Polling for job types: {SUPPORTED_JOB_TYPES}\n")
     sessionmaker = get_sessionmaker()
     stale_check_every = max(1, int(60 / max(settings.job_poll_interval_seconds, 1)))
     tick = 0
@@ -75,9 +77,12 @@ async def run_worker() -> None:
                 await asyncio.sleep(settings.job_poll_interval_seconds)
                 continue
 
+            print(f"📦 [Worker] Claimed job {job.id} of type '{job.job_type}' for workspace {job.workspace_id}")
             try:
-                await dispatch_job(job)
+                result = await dispatch_job(job)
+                print(f"✅ [Worker] Job {job.id} completed successfully. Result: {result}")
             except Exception as exc:
+                print(f"❌ [Worker] Job {job.id} failed: {exc}")
                 await queue.mark_failed(job.id, str(exc))
             else:
                 await queue.mark_succeeded(job.id)
