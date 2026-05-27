@@ -144,13 +144,21 @@ function InstagramTab() {
             {activeWorkspace.name}
           </div>
           {error && <p className="text-xs text-destructive mb-3">{error}</p>}
-          <button
-            onClick={disconnect}
-            disabled={disconnecting}
-            className="w-full h-10 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold disabled:opacity-60"
-          >
-            {disconnecting ? "Disconnecting..." : "Disconnect"}
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => setConnectDialogOpen(true)}
+              className="w-full h-10 rounded-lg border border-border text-foreground hover:bg-accent text-sm font-semibold transition"
+            >
+              Reconnect / Update
+            </button>
+            <button
+              onClick={disconnect}
+              disabled={disconnecting}
+              className="w-full h-10 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold disabled:opacity-60 hover:bg-destructive/90 transition"
+            >
+              {disconnecting ? "Disconnecting..." : "Disconnect"}
+            </button>
+          </div>
         </div>
       )}
 
