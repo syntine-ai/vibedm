@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Download, Plus, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 
+import { FormField } from "@/components/FormField";
 import { PageHeader } from "@/components/PageHeader";
 import {
   useActiveWorkspace,
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/contacts")({
     tag: typeof search.tag === "string" ? search.tag : undefined,
     q: typeof search.q === "string" ? search.q : undefined,
   }),
-  head: () => ({ meta: [{ title: "Contacts - DMFlow" }] }),
+  head: () => ({ meta: [{ title: "Contacts - Vibe DM" }] }),
   component: ContactsPage,
 });
 
@@ -54,8 +55,10 @@ function ContactsPage() {
       phone: form.phone || null,
       tags: form.tags
         .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean),
+        .flatMap((value) => {
+          const trimmed = value.trim();
+          return trimmed ? [trimmed] : [];
+        }),
     };
     if (editing) {
       await updateMutation.mutateAsync({ contactId: editing.id, body });
@@ -96,13 +99,14 @@ function ContactsPage() {
         action={
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={exportCsv}
               className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-border text-sm font-semibold"
             >
-              <Download className="w-4 h-4" /> Export
+              <Download className="size-4" /> Export
             </button>
             <label className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-border text-sm font-semibold cursor-pointer">
-              <Upload className="w-4 h-4" /> Import
+              <Upload className="size-4" /> Import
               <input type="file" accept=".csv,text/csv" className="hidden" onChange={importCsv} />
             </label>
           </div>
@@ -148,6 +152,7 @@ function ContactsPage() {
                   <td className="px-6 py-4">
                     <div className="flex justify-end gap-2">
                       <button
+                        type="button"
                         onClick={() => {
                           setEditing(contact);
                           setForm({
@@ -163,10 +168,12 @@ function ContactsPage() {
                         Edit
                       </button>
                       <button
+                        type="button"
+                        aria-label="Delete contact"
                         onClick={() => deleteMutation.mutate(contact.id)}
                         className="text-destructive"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="size-4" />
                       </button>
                     </div>
                   </td>
@@ -188,10 +195,10 @@ function ContactsPage() {
           className="bg-card rounded-2xl border border-border/60 shadow-[var(--shadow-card)] p-6 h-fit"
         >
           <h3 className="font-semibold flex items-center gap-2">
-            <Plus className="w-4 h-4" /> {editing ? "Edit contact" : "Create contact"}
+            <Plus className="size-4" /> {editing ? "Edit contact" : "Create contact"}
           </h3>
           <div className="mt-5 space-y-3">
-            <Field label="Instagram username">
+            <FormField label="Instagram username">
               <input
                 className="ipt"
                 value={form.ig_username}
@@ -199,8 +206,8 @@ function ContactsPage() {
                   setForm((current) => ({ ...current, ig_username: event.target.value }))
                 }
               />
-            </Field>
-            <Field label="Name">
+            </FormField>
+            <FormField label="Name">
               <input
                 className="ipt"
                 value={form.name}
@@ -208,8 +215,8 @@ function ContactsPage() {
                   setForm((current) => ({ ...current, name: event.target.value }))
                 }
               />
-            </Field>
-            <Field label="Email">
+            </FormField>
+            <FormField label="Email">
               <input
                 className="ipt"
                 type="email"
@@ -218,8 +225,8 @@ function ContactsPage() {
                   setForm((current) => ({ ...current, email: event.target.value }))
                 }
               />
-            </Field>
-            <Field label="Phone">
+            </FormField>
+            <FormField label="Phone">
               <input
                 className="ipt"
                 value={form.phone}
@@ -227,8 +234,8 @@ function ContactsPage() {
                   setForm((current) => ({ ...current, phone: event.target.value }))
                 }
               />
-            </Field>
-            <Field label="Tags">
+            </FormField>
+            <FormField label="Tags">
               <input
                 className="ipt"
                 value={form.tags}
@@ -237,10 +244,10 @@ function ContactsPage() {
                 }
                 placeholder="lead, giveaway"
               />
-            </Field>
+            </FormField>
           </div>
           <div className="mt-5 flex gap-2">
-            <button className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
+            <button type="submit" className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
               {editing ? "Save" : "Create"}
             </button>
             {editing && (
@@ -260,16 +267,7 @@ function ContactsPage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-medium mb-1.5 block">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function InputStyles() {
+export function InputStyles() {
   return (
     <style>{`.ipt { width:100%; height:42px; padding:0 12px; border:1px solid var(--border); border-radius:10px; font-size:14px; outline:none; background:var(--surface); }
 .ipt:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(61,58,238,0.12); }`}</style>

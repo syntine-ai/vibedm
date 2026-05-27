@@ -14,7 +14,7 @@ import type { AutomationFilters } from "@/lib/api/resources";
 import type { TriggerType } from "@/lib/api/types";
 
 export const Route = createFileRoute("/automations/")({
-  head: () => ({ meta: [{ title: "Automations - DMFlow" }] }),
+  head: () => ({ meta: [{ title: "Automations - Vibe DM" }] }),
   component: AutomationsPage,
 });
 
@@ -39,11 +39,12 @@ function AutomationsPage() {
         title="Automations"
         action={
           <button
+            type="button"
             onClick={createAutomation}
             disabled={createMutation.isPending}
             className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition disabled:opacity-60"
           >
-            <Plus className="w-4 h-4" /> {createMutation.isPending ? "Creating..." : "Create"}
+            <Plus className="size-4" /> {createMutation.isPending ? "Creating…" : "Create"}
           </button>
         }
       />
@@ -125,16 +126,22 @@ function AutomationsPage() {
                       params={{ id: automation.id }}
                       className="w-8 h-8 rounded-md hover:bg-muted flex items-center justify-center"
                     >
-                      <Pencil className="w-4 h-4 text-muted-foreground" />
+                      <Pencil className="size-4 text-muted-foreground" />
                     </Link>
                     <button
+                      type="button"
+                      aria-label="Delete automation"
                       onClick={() => deleteMutation.mutate(automation.id)}
                       className="w-8 h-8 rounded-md hover:bg-muted flex items-center justify-center"
                     >
-                      <Trash2 className="w-4 h-4 text-muted-foreground" />
+                      <Trash2 className="size-4 text-muted-foreground" />
                     </button>
-                    <button className="w-8 h-8 rounded-md hover:bg-muted flex items-center justify-center">
-                      <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                    <button
+                      type="button"
+                      aria-label="More options"
+                      className="w-8 h-8 rounded-md hover:bg-muted flex items-center justify-center"
+                    >
+                      <MoreHorizontal className="size-4 text-muted-foreground" />
                     </button>
                   </div>
                 </td>
@@ -144,7 +151,7 @@ function AutomationsPage() {
         </table>
 
         {automationsQuery.isLoading && (
-          <div className="px-6 py-8 text-sm text-muted-foreground">Loading automations...</div>
+          <div className="px-6 py-8 text-sm text-muted-foreground">Loading automations…</div>
         )}
         {!automationsQuery.isLoading && !automationsQuery.data?.length && (
           <div className="px-6 py-8 text-sm text-muted-foreground">No automations found.</div>

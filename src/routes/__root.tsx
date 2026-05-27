@@ -16,7 +16,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { useAuthMeQuery, useSessionQuery } from "@/lib/api/hooks";
 import { supabase } from "@/integrations/supabase/client";
 
-const AUTH_ROUTES = ["/login", "/signup", "/forgot-password", "/auth/instagram/callback"];
+const AUTH_ROUTES = ["/login", "/signup", "/forgot-password", "/auth/instagram/callback", "/privacy"];
 
 function NotFoundComponent() {
   return (
@@ -67,13 +67,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "DMFlow — Instagram DM Automation" },
+      { title: "Vibe DM — Instagram DM Automation" },
       {
         name: "description",
         content: "Automate Instagram DMs triggered by comments, replies, and mentions.",
       },
-      { property: "og:title", content: "DMFlow — Instagram DM Automation" },
-      { name: "twitter:title", content: "DMFlow — Instagram DM Automation" },
+      { property: "og:title", content: "Vibe DM — Instagram DM Automation" },
+      { name: "twitter:title", content: "Vibe DM — Instagram DM Automation" },
       {
         property: "og:description",
         content: "Automate Instagram DMs triggered by comments, replies, and mentions.",

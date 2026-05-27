@@ -4,6 +4,7 @@ import { Heart } from "lucide-react";
 import { useState } from "react";
 
 import { ConnectInstagramDialog } from "@/components/ConnectInstagramDialog";
+import { FormField } from "@/components/FormField";
 import { queryKeys } from "@/lib/api/hooks";
 import { authApi } from "@/lib/api/resources";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,9 +79,9 @@ function SignupPage() {
       <div className="w-full max-w-md bg-card rounded-2xl shadow-[var(--shadow-modal)] p-8">
         <div className="flex items-center gap-2 justify-center mb-8">
           <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-            <Heart className="w-4 h-4 fill-current" />
+            <Heart className="size-4 fill-current" />
           </div>
-          <span className="font-bold text-lg">DMFlow</span>
+          <span className="font-bold text-lg">Vibe DM</span>
         </div>
         <h1 className="text-2xl font-bold text-center mb-1">Create your account</h1>
         <p className="text-sm text-muted-foreground text-center mb-6">
@@ -89,24 +90,24 @@ function SignupPage() {
 
         <form className="space-y-4" onSubmit={handleSignup}>
           <div className="grid grid-cols-2 gap-3">
-            <L label="First name">
+            <FormField label="First name">
               <input
                 className="input"
                 placeholder="Alex"
                 value={form.firstName}
                 onChange={updateField("firstName")}
               />
-            </L>
-            <L label="Last name">
+            </FormField>
+            <FormField label="Last name">
               <input
                 className="input"
                 placeholder="Morgan"
                 value={form.lastName}
                 onChange={updateField("lastName")}
               />
-            </L>
+            </FormField>
           </div>
-          <L label="Email">
+          <FormField label="Email">
             <input
               type="email"
               className="input"
@@ -115,8 +116,8 @@ function SignupPage() {
               onChange={updateField("email")}
               required
             />
-          </L>
-          <L label="Phone number">
+          </FormField>
+          <FormField label="Phone number">
             <input
               type="tel"
               className="input"
@@ -124,8 +125,8 @@ function SignupPage() {
               value={form.phone}
               onChange={updateField("phone")}
             />
-          </L>
-          <L label="Password">
+          </FormField>
+          <FormField label="Password">
             <input
               type="password"
               className="input"
@@ -134,8 +135,8 @@ function SignupPage() {
               onChange={updateField("password")}
               required
             />
-          </L>
-          <L label="Confirm password">
+          </FormField>
+          <FormField label="Confirm password">
             <input
               type="password"
               className="input"
@@ -144,11 +145,12 @@ function SignupPage() {
               onChange={updateField("confirmPassword")}
               required
             />
-          </L>
+          </FormField>
 
           {error && <p className="text-xs text-destructive">{error}</p>}
 
           <button
+            type="submit"
             disabled={submitting}
             className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary-dark transition disabled:opacity-60"
           >
@@ -162,6 +164,14 @@ function SignupPage() {
             Login
           </Link>
         </p>
+
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          By creating an account, you agree to our{" "}
+          <Link to="/privacy" className="underline hover:text-primary transition">
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </div>
 
       <ConnectInstagramDialog
@@ -173,14 +183,5 @@ function SignupPage() {
       <style>{`.input { width: 100%; height: 44px; padding: 0 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; outline: none; background: var(--surface); }
 .input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(61,58,238,0.12); }`}</style>
     </div>
-  );
-}
-
-function L({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-medium mb-1.5 block">{label}</span>
-      {children}
-    </label>
   );
 }

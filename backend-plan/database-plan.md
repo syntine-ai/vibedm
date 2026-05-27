@@ -1,6 +1,6 @@
-# Backend Database Plan — DMFlow (Supabase Postgres)
+# Backend Database Plan — Vibe DM (Supabase Postgres)
 
-Companion to `api-plan.md`. Defines tables, relationships, indexes, enums, and Row-Level Security (RLS) for the DMFlow product. Aligned with:
+Companion to `api-plan.md`. Defines tables, relationships, indexes, enums, and Row-Level Security (RLS) for the Vibe DM product. Aligned with:
 - `doc/onboarding-workspace-flow.md` — every user gets a workspace via the IG connect flow
 - `doc/billing.md` — per-workspace plan, monthly/yearly, INR
 

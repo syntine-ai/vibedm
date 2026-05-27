@@ -1,4 +1,4 @@
-# Backend API Plan — DMFlow (FastAPI)
+# Backend API Plan — Vibe DM (FastAPI)
 
 Source of truth for the backend team. Frontend is a TanStack Start SPA that currently runs on mock data; this document defines the HTTP contract the FastAPI service must implement so the frontend can be wired to real data with minimal churn.
 

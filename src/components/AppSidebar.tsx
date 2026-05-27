@@ -58,7 +58,7 @@ export function AppSidebar() {
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
           <Heart className="w-4 h-4 fill-current" />
         </div>
-        <span className="font-bold text-[16px] tracking-tight">DMFlow</span>
+        <span className="font-bold text-[16px] tracking-tight">Vibe DM</span>
       </div>
 
       {/* User block */}

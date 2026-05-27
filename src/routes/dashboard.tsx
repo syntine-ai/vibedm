@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useActiveWorkspace, useDashboardQueries } from "@/lib/api/hooks";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard - DMFlow" }] }),
+  head: () => ({ meta: [{ title: "Dashboard - Vibe DM" }] }),
   component: Dashboard,
 });
 
@@ -76,7 +76,7 @@ function Dashboard() {
             params={{ id: "new" }}
             className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition"
           >
-            Create Automation <ArrowRight className="w-4 h-4" />
+            Create Automation <ArrowRight className="size-4" />
           </Link>
         }
       />
@@ -93,7 +93,7 @@ function Dashboard() {
             >
               <div className="flex items-center justify-between">
                 <div className="text-xs text-muted-foreground font-medium">{card.label}</div>
-                <Icon className={`w-4 h-4 ${card.accent}`} />
+                <Icon className={`size-4 ${card.accent}`} />
               </div>
               <div className="mt-2 text-3xl font-bold">{card.value.toLocaleString()}</div>
             </div>
@@ -121,7 +121,7 @@ function Dashboard() {
             </div>
           ))}
           {dashboard.activity.isLoading && (
-            <div className="px-6 py-8 text-sm text-muted-foreground">Loading activity...</div>
+            <div className="px-6 py-8 text-sm text-muted-foreground">Loading activity…</div>
           )}
           {!dashboard.activity.isLoading && !dashboard.activity.data?.length && (
             <div className="px-6 py-8 text-sm text-muted-foreground">No recent activity yet.</div>

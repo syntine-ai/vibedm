@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ContactsRouteImport } from './routes/contacts'
@@ -28,6 +29,11 @@ const SignupRoute = SignupRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/contacts': typeof ContactsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/automations/': typeof AutomationsIndexRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/contacts': typeof ContactsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/automations': typeof AutomationsIndexRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/contacts': typeof ContactsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/automations/': typeof AutomationsIndexRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/contacts'
     | '/dashboard'
     | '/login'
+    | '/privacy'
     | '/settings'
     | '/signup'
     | '/automations/'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/contacts'
     | '/dashboard'
     | '/login'
+    | '/privacy'
     | '/settings'
     | '/signup'
     | '/automations'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/contacts'
     | '/dashboard'
     | '/login'
+    | '/privacy'
     | '/settings'
     | '/signup'
     | '/automations/'
@@ -151,6 +163,7 @@ export interface RootRouteChildren {
   ContactsRoute: typeof ContactsRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
+  PrivacyRoute: typeof PrivacyRoute
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   AuthInstagramCallbackRoute: typeof AuthInstagramCallbackRoute
@@ -170,6 +183,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -251,6 +271,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactsRoute: ContactsRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
+  PrivacyRoute: PrivacyRoute,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   AuthInstagramCallbackRoute: AuthInstagramCallbackRoute,

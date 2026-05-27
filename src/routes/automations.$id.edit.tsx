@@ -3,6 +3,7 @@ import { ArrowLeft, Info, Play, Save, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { ApiError } from "@/lib/api/client";
+import { FormField } from "@/components/FormField";
 import {
   useActiveWorkspace,
   useAutomationQuery,
@@ -14,7 +15,7 @@ import {
 import type { AutomationStep, TriggerType } from "@/lib/api/types";
 
 export const Route = createFileRoute("/automations/$id/edit")({
-  head: () => ({ meta: [{ title: "Edit automation - DMFlow" }] }),
+  head: () => ({ meta: [{ title: "Edit automation - Vibe DM" }] }),
   component: EditorPage,
 });
 
@@ -137,7 +138,7 @@ function EditorPage() {
             to="/automations"
             className="w-9 h-9 rounded-md hover:bg-muted flex items-center justify-center shrink-0"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="size-4" />
           </Link>
           <input
             value={name}
@@ -147,6 +148,7 @@ function EditorPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => testMutation.mutate()}
             disabled={testMutation.isPending}
             className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border border-border bg-card text-sm font-medium hover:bg-muted"
@@ -154,6 +156,7 @@ function EditorPage() {
             <Play className="w-3.5 h-3.5" /> {testMutation.isPending ? "Testing..." : "Re-Trigger"}
           </button>
           <button
+            type="button"
             onClick={toggleActive}
             disabled={!trigger || statusMutation.isPending}
             className={`relative w-11 h-6 rounded-full transition ${
@@ -166,11 +169,12 @@ function EditorPage() {
             />
           </button>
           <button
+            type="button"
             onClick={save}
             disabled={updateMutation.isPending}
             className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition"
           >
-            <Save className="w-4 h-4" /> {updateMutation.isPending ? "Saving..." : "Save Changes"}
+            <Save className="size-4" /> {updateMutation.isPending ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
@@ -191,6 +195,7 @@ function EditorPage() {
           <div className="space-y-2">
             {triggers.map((item) => (
               <button
+                type="button"
                 key={item.id}
                 disabled={item.soon}
                 onClick={() => setTrigger(item.id)}
@@ -200,7 +205,7 @@ function EditorPage() {
                     : "border-border bg-card hover:bg-muted"
                 } ${item.soon ? "opacity-60 cursor-not-allowed" : ""}`}
               >
-                <Zap className="w-4 h-4 text-primary shrink-0" />
+                <Zap className="size-4 text-primary shrink-0" />
                 <span className="flex-1">{item.label}</span>
                 {item.soon && (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent text-primary">
@@ -215,35 +220,35 @@ function EditorPage() {
         {trigger && (
           <Section title="Trigger Config" subtitle="Keywords and source configuration">
             {(trigger === "comment-post" || trigger === "story-reply") && (
-              <Field label={trigger === "comment-post" ? "Post or Reel ID" : "Story ID"}>
+              <FormField label={trigger === "comment-post" ? "Post or Reel ID" : "Story ID"}>
                 <input
                   className="ipt"
                   value={postId}
                   onChange={(event) => setPostId(event.target.value)}
                   placeholder="Instagram media ID"
                 />
-              </Field>
+              </FormField>
             )}
-            <Field label="Keywords">
+            <FormField label="Keywords">
               <input
                 className="ipt"
                 value={keywords}
                 onChange={(event) => setKeywords(event.target.value)}
                 placeholder="price, buy, giveaway"
               />
-            </Field>
+            </FormField>
           </Section>
         )}
 
         <Section title="Response Flow" subtitle="The first action step this automation will run">
-          <Field label="DM Message">
+          <FormField label="DM Message">
             <textarea
               className="ipt min-h-[120px] py-3"
               value={message}
               onChange={(event) => setMessage(event.target.value)}
               placeholder="Hey! Thanks for reaching out."
             />
-          </Field>
+          </FormField>
           <div className="mt-4 border-t border-border pt-4 flex items-start gap-3 text-xs text-muted-foreground">
             <Info className="w-3.5 h-3.5 mt-0.5" />
             Activation requires a trigger, valid trigger config, and at least one response step.
@@ -258,8 +263,10 @@ function EditorPage() {
 function buildTriggerConfig(trigger: UiTrigger, keywords: string, postId: string) {
   const parsedKeywords = keywords
     .split(",")
-    .map((keyword) => keyword.trim())
-    .filter(Boolean);
+    .flatMap((keyword) => {
+      const trimmed = keyword.trim();
+      return trimmed ? [trimmed] : [];
+    });
 
   if (trigger === "comment-post") {
     return { post_id: postId.trim(), keywords: parsedKeywords, match: "any" };
@@ -307,16 +314,7 @@ function Section({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-medium mb-1.5 block">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function InputStyles() {
+export function InputStyles() {
   return (
     <style>{`.ipt { width:100%; min-height:44px; padding:0 14px; border:1px solid var(--border); border-radius:10px; font-size:14px; outline:none; background:var(--surface); }
 .ipt:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(61,58,238,0.12); }`}</style>

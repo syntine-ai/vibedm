@@ -3,6 +3,7 @@ import { Check, Instagram, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { ConnectInstagramDialog } from "@/components/ConnectInstagramDialog";
+import { FormField } from "@/components/FormField";
 import { PageHeader } from "@/components/PageHeader";
 import {
   useActivateWorkspaceMutation,
@@ -23,7 +24,7 @@ import { instagramApi } from "@/lib/api/resources";
 import type { BillingCycle, Plan, WorkspaceSummary } from "@/lib/api/types";
 
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Settings - DMFlow" }] }),
+  head: () => ({ meta: [{ title: "Settings - Vibe DM" }] }),
   component: SettingsPage,
 });
 
@@ -39,6 +40,7 @@ function SettingsPage() {
       <div className="flex items-center gap-1 mb-6 border-b border-border overflow-x-auto">
         {tabs.map((item) => (
           <button
+            type="button"
             key={item}
             onClick={() => setTab(item)}
             className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition -mb-px whitespace-nowrap ${
@@ -60,7 +62,7 @@ function SettingsPage() {
   );
 }
 
-function GeneralTab() {
+export function GeneralTab() {
   const { meQuery } = useActiveWorkspace();
   const user = meQuery.data?.user;
 
@@ -72,26 +74,26 @@ function GeneralTab() {
       </p>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <F label="First Name">
+          <FormField label="First Name">
             <input className="ipt" value={user?.first_name ?? ""} readOnly />
-          </F>
-          <F label="Last Name">
+          </FormField>
+          <FormField label="Last Name">
             <input className="ipt" value={user?.last_name ?? ""} readOnly />
-          </F>
+          </FormField>
         </div>
-        <F label="Email">
+        <FormField label="Email">
           <input type="email" className="ipt" value={user?.email ?? ""} readOnly />
-        </F>
-        <F label="Phone Number">
+        </FormField>
+        <FormField label="Phone Number">
           <input type="tel" className="ipt" value={user?.phone ?? ""} readOnly />
-        </F>
+        </FormField>
       </div>
       <InputStyles />
     </div>
   );
 }
 
-function InstagramTab() {
+export function InstagramTab() {
   const { activeWorkspace } = useActiveWorkspace();
   const [connectDialogOpen, setConnectDialogOpen] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -121,13 +123,14 @@ function InstagramTab() {
       {!activeWorkspace?.ig_username ? (
         <div className="rounded-xl border-2 border-dashed border-border p-10 text-center">
           <div className="w-14 h-14 mx-auto rounded-2xl bg-accent flex items-center justify-center mb-4">
-            <Instagram className="w-7 h-7 text-primary" />
+            <Instagram className="size-7 text-primary" />
           </div>
           <h4 className="font-semibold mb-1">No account connected</h4>
           <p className="text-sm text-muted-foreground mb-5">
             Connect your Instagram Business account to start building automations.
           </p>
           <button
+            type="button"
             onClick={() => setConnectDialogOpen(true)}
             className="h-11 px-5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition"
           >
@@ -146,12 +149,14 @@ function InstagramTab() {
           {error && <p className="text-xs text-destructive mb-3">{error}</p>}
           <div className="flex flex-col gap-2">
             <button
+              type="button"
               onClick={() => setConnectDialogOpen(true)}
               className="w-full h-10 rounded-lg border border-border text-foreground hover:bg-accent text-sm font-semibold transition"
             >
               Reconnect / Update
             </button>
             <button
+              type="button"
               onClick={disconnect}
               disabled={disconnecting}
               className="w-full h-10 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold disabled:opacity-60 hover:bg-destructive/90 transition"
@@ -171,7 +176,7 @@ function InstagramTab() {
   );
 }
 
-function WorkspacesTab() {
+export function WorkspacesTab() {
   const workspacesQuery = useWorkspacesQuery();
   const activateMutation = useActivateWorkspaceMutation();
   const updateMutation = useUpdateWorkspaceMutation();
@@ -191,10 +196,11 @@ function WorkspacesTab() {
             </p>
           </div>
           <button
+            type="button"
             onClick={() => setConnectDialogOpen(true)}
             className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition flex items-center gap-1.5"
           >
-            <Plus className="w-4 h-4" /> Add workspace
+            <Plus className="size-4" /> Add workspace
           </button>
         </div>
 
@@ -238,7 +244,7 @@ function WorkspacesTab() {
   );
 }
 
-function WorkspaceRow({
+export function WorkspaceRow({
   workspace,
   onActivate,
   onRename,
@@ -275,11 +281,13 @@ function WorkspaceRow({
           )}
         </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-          <Instagram className="w-3.5 h-3.5" />{" "}
+          <Instagram className="size-3.5" />{" "}
           {workspace.ig_username ? `@${workspace.ig_username}` : "No IG account"}
         </div>
       </div>
       <button
+        type="button"
+        aria-label={workspace.active ? "Active workspace" : "Set as active"}
         onClick={onActivate}
         disabled={workspace.active}
         className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
@@ -289,20 +297,22 @@ function WorkspaceRow({
         }`}
         title={workspace.active ? "Active workspace" : "Set as active"}
       >
-        <Check className="w-4 h-4" />
+        <Check className="size-4" />
       </button>
       <button
+        type="button"
+        aria-label="Delete workspace"
         onClick={onDelete}
         className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
         title="Delete workspace"
       >
-        <Trash2 className="w-4 h-4" />
+        <Trash2 className="size-4" />
       </button>
     </div>
   );
 }
 
-function MembersPanel({ activeWorkspace }: { activeWorkspace: WorkspaceSummary | null }) {
+export function MembersPanel({ activeWorkspace }: { activeWorkspace: WorkspaceSummary | null }) {
   const membersQuery = useWorkspaceMembersQuery(activeWorkspace?.id);
   const inviteMutation = useInviteMemberMutation(activeWorkspace?.id);
   const updateMemberMutation = useUpdateMemberMutation(activeWorkspace?.id);
@@ -342,7 +352,7 @@ function MembersPanel({ activeWorkspace }: { activeWorkspace: WorkspaceSummary |
           <option value="member">Member</option>
           <option value="admin">Admin</option>
         </select>
-        <button className="h-11 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
+        <button type="submit" className="h-11 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
           Invite
         </button>
       </form>
@@ -370,6 +380,7 @@ function MembersPanel({ activeWorkspace }: { activeWorkspace: WorkspaceSummary |
               <option value="member">Member</option>
             </select>
             <button
+              type="button"
               onClick={() => removeMemberMutation.mutate(member.user_id)}
               className="text-xs font-semibold text-destructive"
             >
@@ -386,7 +397,7 @@ function MembersPanel({ activeWorkspace }: { activeWorkspace: WorkspaceSummary |
   );
 }
 
-function BillingTab() {
+export function BillingTab() {
   const { activeWorkspace } = useActiveWorkspace();
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const billing = useBillingQueries(activeWorkspace?.id);
@@ -420,6 +431,7 @@ function BillingTab() {
           <div className="inline-flex rounded-lg border border-border p-1">
             {(["monthly", "yearly"] as BillingCycle[]).map((item) => (
               <button
+                type="button"
                 key={item}
                 onClick={() => setCycle(item)}
                 className={`px-3 py-1.5 rounded-md text-xs font-semibold ${
@@ -457,12 +469,14 @@ function BillingTab() {
             </div>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => portalMutation.mutate()}
                 className="h-10 px-4 rounded-lg border border-border text-sm font-semibold"
               >
                 Billing portal
               </button>
               <button
+                type="button"
                 onClick={() => cancelMutation.mutate()}
                 className="h-10 px-4 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold"
               >
@@ -508,7 +522,7 @@ function BillingTab() {
   );
 }
 
-function CreditCardFallback() {
+export function CreditCardFallback() {
   return (
     <div className="mx-auto w-16 h-16 rounded-2xl bg-accent flex items-center justify-center text-primary">
       <span className="text-lg font-bold">INR</span>
@@ -516,7 +530,7 @@ function CreditCardFallback() {
   );
 }
 
-function PlanCard({
+export function PlanCard({
   plan,
   cycle,
   active,
@@ -544,11 +558,12 @@ function PlanCard({
       <ul className="mt-4 space-y-2 text-xs text-muted-foreground">
         {plan.features.map((feature) => (
           <li key={feature} className="flex gap-2">
-            <Check className="w-3.5 h-3.5 text-success shrink-0" /> {feature}
+            <Check className="size-3.5 text-success shrink-0" /> {feature}
           </li>
         ))}
       </ul>
       <button
+        type="button"
         onClick={onCheckout}
         className="mt-5 w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold"
       >
@@ -558,16 +573,7 @@ function PlanCard({
   );
 }
 
-function F({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-medium mb-1.5 block">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function formatInr(paise: number) {
+export function formatInr(paise: number) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
@@ -575,7 +581,7 @@ function formatInr(paise: number) {
   }).format(paise / 100);
 }
 
-function InputStyles() {
+export function InputStyles() {
   return (
     <style>{`.ipt { width:100%; height:44px; padding:0 14px; border:1px solid var(--border); border-radius:10px; font-size:14px; outline:none; background:var(--surface); }
 .ipt:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(61,58,238,0.12); }`}</style>

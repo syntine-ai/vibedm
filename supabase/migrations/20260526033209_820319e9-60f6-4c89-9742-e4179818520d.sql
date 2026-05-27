@@ -1,5 +1,5 @@
 -- ============================================================
--- DMFlow initial schema (per backend-plan/database-plan.md)
+-- Vibe DM initial schema (per backend-plan/database-plan.md)
 -- ============================================================
 
 -- Extensions
