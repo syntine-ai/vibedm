@@ -1,21 +1,16 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
+  Heart,
   Home,
-  PlayCircle,
-  Workflow,
-  Users,
-  Briefcase,
-  Monitor,
-  CircleDollarSign,
-  Settings,
-  Send,
-  User as UserIcon,
-  Crown,
   LogOut,
   MessageCircle,
-  Heart,
+  Send,
+  Settings,
+  User as UserIcon,
+  Users,
+  Workflow,
 } from "lucide-react";
-import { user } from "@/lib/mock-data";
+import { useActiveWorkspace, useLogoutMutation, useUsageQuery } from "@/lib/api/hooks";
 
 type NavItem = {
   label: string;
@@ -27,16 +22,31 @@ type NavItem = {
 const nav: NavItem[] = [
   { label: "Home", icon: Home, to: "/dashboard" },
   { label: "Automations", icon: Workflow, to: "/automations" },
+  { label: "Contacts", icon: Users, to: "/contacts" },
   { label: "Settings", icon: Settings, to: "/settings" },
 ];
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const initials = (user.firstName[0] + user.lastName[0]).toUpperCase();
+  const { activeWorkspace, meQuery } = useActiveWorkspace();
+  const usageQuery = useUsageQuery(activeWorkspace?.id);
+  const logoutMutation = useLogoutMutation(() => navigate({ to: "/login" }));
+  const user = meQuery.data?.user;
+  const fullName =
+    [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.email || "User";
+  const initials = fullName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
-  const dmPct = Math.min(100, (user.dmUsage / user.dmLimit) * 100);
-  const ctPct = Math.min(100, (user.contactUsage / user.contactLimit) * 100);
+  const usage = usageQuery.data;
+  const dmPct = usage ? Math.min(100, (usage.dm_count / Math.max(usage.dm_limit, 1)) * 100) : 0;
+  const ctPct = usage
+    ? Math.min(100, (usage.contact_count / Math.max(usage.contact_limit, 1)) * 100)
+    : 0;
 
   return (
     <aside
@@ -57,16 +67,18 @@ export function AppSidebar() {
           {initials}
         </div>
         <div className="min-w-0">
-          <div className="text-[14px] font-semibold truncate">
-            {user.firstName} {user.lastName}
-          </div>
+          <div className="text-[14px] font-semibold truncate">{fullName}</div>
           <div className="flex items-center gap-1.5 text-[12px]">
             <span
               className="w-2 h-2 rounded-full"
-              style={{ background: user.igConnected ? "var(--success)" : "var(--warning)" }}
+              style={{
+                background: activeWorkspace?.ig_username ? "var(--success)" : "var(--warning)",
+              }}
             />
             <span className="text-muted-foreground truncate">
-              {user.igConnected ? `@${user.igUsername}` : "IG not connected"}
+              {activeWorkspace?.ig_username
+                ? `@${activeWorkspace.ig_username}`
+                : "IG not connected"}
             </span>
           </div>
         </div>
@@ -95,7 +107,12 @@ export function AppSidebar() {
                   {active && (
                     <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-primary" />
                   )}
-                  <Icon className={["w-[18px] h-[18px]", active ? "text-primary" : "text-muted-foreground"].join(" ")} />
+                  <Icon
+                    className={[
+                      "w-[18px] h-[18px]",
+                      active ? "text-primary" : "text-muted-foreground",
+                    ].join(" ")}
+                  />
                   <span className="flex-1">{item.label}</span>
                   {item.badge && (
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-warning text-warning-foreground">
@@ -110,18 +127,41 @@ export function AppSidebar() {
 
         {/* Usage meters */}
         <div className="mt-6 space-y-4 px-1">
-          <Meter icon={<Send className="w-3.5 h-3.5" />} label={`${user.dmUsage}/${user.dmLimit} DM per month`} pct={dmPct} />
-          <Meter icon={<UserIcon className="w-3.5 h-3.5" />} label={`${user.contactUsage}/${user.contactLimit} contacts per month`} pct={ctPct} />
+          <Meter
+            icon={<Send className="w-3.5 h-3.5" />}
+            label={
+              usage
+                ? `${usage.dm_count}/${usage.dm_limit} DM per month`
+                : "Usage loads after workspace connect"
+            }
+            pct={dmPct}
+          />
+          <Meter
+            icon={<UserIcon className="w-3.5 h-3.5" />}
+            label={
+              usage
+                ? `${usage.contact_count}/${usage.contact_limit} contacts per month`
+                : "Contacts usage unavailable"
+            }
+            pct={ctPct}
+          />
         </div>
       </nav>
 
       {/* Footer */}
       <div className="p-3 space-y-2 border-t border-border">
-        <button onClick={() => navigate({ to: "/login" })} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground transition">
+        <button
+          onClick={() => logoutMutation.mutate()}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground transition"
+          disabled={logoutMutation.isPending}
+        >
           <LogOut className="w-4 h-4" />
-          Logout
+          {logoutMutation.isPending ? "Logging out..." : "Logout"}
         </button>
-        <button className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-white text-[13px] font-semibold hover:opacity-90 transition" style={{ background: "var(--whatsapp)" }}>
+        <button
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-white text-[13px] font-semibold hover:opacity-90 transition"
+          style={{ background: "var(--whatsapp)" }}
+        >
           <MessageCircle className="w-4 h-4" />
           Support / Feedback
         </button>

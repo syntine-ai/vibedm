@@ -12,6 +12,23 @@ export const user = {
   contactLimit: 1000,
 };
 
+export type Workspace = {
+  id: string;
+  name: string;
+  igUsername: string;
+  avatarUrl?: string;
+  active: boolean;
+};
+
+export const initialWorkspaces: Workspace[] = [
+  {
+    id: "w1",
+    name: "Alex Morgan",
+    igUsername: "alex.creates",
+    active: true,
+  },
+];
+
 export type Automation = {
   id: string;
   name: string;
