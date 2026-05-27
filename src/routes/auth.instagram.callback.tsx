@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { queryKeys } from "@/lib/api/hooks";
+import { queryKeys, useActiveWorkspace } from "@/lib/api/hooks";
 import { authApi, instagramApi } from "@/lib/api/resources";
 
 export const Route = createFileRoute("/auth/instagram/callback")({
@@ -12,6 +12,7 @@ export const Route = createFileRoute("/auth/instagram/callback")({
 function InstagramCallbackPage() {
   const navigate = useNavigate({ from: "/auth/instagram/callback" });
   const queryClient = useQueryClient();
+  const { activeWorkspace } = useActiveWorkspace();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -26,7 +27,10 @@ function InstagramCallbackPage() {
     }
 
     const complete =
-      intent === "add_workspace" ? instagramApi.connectWorkspace : instagramApi.completeOauth;
+      intent === "add_workspace"
+        ? (body: { code: string; state: string }) =>
+            instagramApi.connectWorkspace(body, activeWorkspace?.id)
+        : instagramApi.completeOauth;
 
     complete({ code, state })
       .then(async (response) => {

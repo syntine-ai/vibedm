@@ -108,10 +108,12 @@ export const instagramApi = {
       method: "POST",
       body,
     }),
-  connectWorkspace: (body: { code: string; state: string }) =>
+  connectWorkspace: (body: { code: string; state: string }, workspaceId?: string) =>
     api.request<InstagramWorkspaceResponse>("/api/v1/workspaces/connect-instagram", {
       method: "POST",
       body,
+      workspaceScoped: true,
+      workspaceId,
     }),
   disconnect: (workspaceId: string) =>
     api.request<Record<string, boolean>>("/api/v1/instagram/connection", {
