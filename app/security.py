@@ -42,6 +42,7 @@ def decode_supabase_jwt(token: str, settings: Settings) -> dict[str, Any]:
                 signing_key.key,
                 algorithms=["ES256"],
                 options={"verify_aud": False},
+                leeway=120,
             )
         except Exception as exc:
             print(f"\n[JWT ES256 Auth Error]: {exc}\n")
@@ -69,6 +70,7 @@ def decode_supabase_jwt(token: str, settings: Settings) -> dict[str, Any]:
                     decoded_secret,
                     algorithms=["HS256"],
                     options={"verify_aud": False},
+                    leeway=120,
                 )
             except jwt.PyJWTError:
                 # If decoded secret failed to verify signature, fall back to literal secret
@@ -79,6 +81,7 @@ def decode_supabase_jwt(token: str, settings: Settings) -> dict[str, Any]:
             secret,
             algorithms=["HS256"],
             options={"verify_aud": False},
+            leeway=120,
         )
     except jwt.PyJWTError as exc:
         print(f"\n[JWT HS256 Auth Error]: {exc}\n")

@@ -154,11 +154,28 @@ class InstagramService:
         profile = await self.provider.exchange_code(code)
         existing = await self.repository.find_connection_by_ig_user(profile.ig_user_id)
         if existing is not None:
-            raise ApiError(
-                status_code=409,
-                code="ig_already_connected",
-                message="Instagram account is already connected",
+            # Update connection in place and return existing workspace details
+            await self.repository.update_connection(
+                workspace_id=existing["workspace_id"],
+                access_token=profile.access_token,
+                scopes=profile.scopes,
+                ig_username=profile.ig_username,
             )
+            workspace_detail = await self.repository.get_workspace_detail(existing["workspace_id"])
+            if workspace_detail is None:
+                raise ApiError(
+                    status_code=404,
+                    code="workspace_not_found",
+                    message="Workspace not found",
+                )
+            workspace = workspace_detail | {
+                "ig_username": profile.ig_username,
+                "ig_user_id": profile.ig_user_id,
+                "plan": "free",
+                "active": True,
+            }
+            return InstagramWorkspaceResponse(workspace=workspace)
+
         workspace = await self.repository.create_workspace_with_connection(
             owner_id=user.id,
             name=profile.ig_username,

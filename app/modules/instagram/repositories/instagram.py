@@ -76,3 +76,45 @@ class InstagramRepository:
             {"workspace_id": workspace_id},
         )
         await self.session.commit()
+
+    async def update_connection(
+        self,
+        *,
+        workspace_id: UUID,
+        access_token: str,
+        scopes: list[str],
+        ig_username: str | None = None,
+    ) -> None:
+        await self.session.execute(
+            text(
+                """
+                update public.instagram_connections
+                set access_token_enc = :access_token_enc,
+                    scopes = :scopes,
+                    ig_username = coalesce(:ig_username, ig_username),
+                    updated_at = now()
+                where workspace_id = :workspace_id
+                """
+            ),
+            {
+                "workspace_id": workspace_id,
+                "access_token_enc": access_token.encode("utf-8"),
+                "scopes": scopes,
+                "ig_username": ig_username,
+            },
+        )
+        await self.session.commit()
+
+    async def get_workspace_detail(self, workspace_id: UUID) -> dict | None:
+        result = await self.session.execute(
+            text(
+                """
+                select id, owner_id, name, avatar_url
+                from public.workspaces
+                where id = :workspace_id
+                """
+            ),
+            {"workspace_id": workspace_id},
+        )
+        row = result.mappings().first()
+        return dict(row) if row else None
