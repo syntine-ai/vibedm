@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from urllib.parse import urlencode
+from uuid import UUID
 import httpx
 
 from app.config import Settings
@@ -143,7 +144,7 @@ class InstagramService:
         )
 
     async def complete_oauth(
-        self, user: CurrentUser, code: str, state: str
+        self, user: CurrentUser, code: str, state: str, workspace_id: UUID | None = None
     ) -> InstagramWorkspaceResponse:
         payload = verify_state(state, self.settings.instagram_app_secret or "dev")
         if payload.get("user_id") != str(user.id):
@@ -152,6 +153,36 @@ class InstagramService:
             )
 
         profile = await self.provider.exchange_code(code)
+
+        if workspace_id is not None:
+            workspace_detail = await self.repository.get_workspace_detail(workspace_id)
+            if workspace_detail is None:
+                raise ApiError(
+                    status_code=404,
+                    code="workspace_not_found",
+                    message="Workspace not found",
+                )
+
+            # Clear any connection on the target workspace, and delete duplicate connection for this IG account elsewhere
+            await self.repository.disconnect(workspace_id)
+            await self.repository.delete_connection_by_ig_user(profile.ig_user_id)
+
+            await self.repository.create_connection_for_workspace(
+                workspace_id=workspace_id,
+                ig_user_id=profile.ig_user_id,
+                ig_username=profile.ig_username,
+                access_token=profile.access_token,
+                scopes=profile.scopes,
+            )
+
+            workspace = workspace_detail | {
+                "ig_username": profile.ig_username,
+                "ig_user_id": profile.ig_user_id,
+                "plan": "free",
+                "active": True,
+            }
+            return InstagramWorkspaceResponse(workspace=workspace)
+
         existing = await self.repository.find_connection_by_ig_user(profile.ig_user_id)
         if existing is not None:
             # Update connection in place and return existing workspace details

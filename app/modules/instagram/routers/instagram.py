@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Settings, get_settings
@@ -50,8 +51,15 @@ async def connect_instagram_from_workspace(
     request: OAuthCallbackRequest,
     user: Annotated[CurrentUser, Depends(get_current_user)],
     service: Annotated[InstagramService, Depends(get_instagram_service)],
+    x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
 ) -> InstagramWorkspaceResponse:
-    return await service.complete_oauth(user, request.code, request.state)
+    workspace_id = None
+    if x_workspace_id:
+        try:
+            workspace_id = UUID(x_workspace_id)
+        except ValueError:
+            pass
+    return await service.complete_oauth(user, request.code, request.state, workspace_id=workspace_id)
 
 
 @instagram_router.delete("/connection")

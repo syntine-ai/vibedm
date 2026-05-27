@@ -118,3 +118,39 @@ class InstagramRepository:
         )
         row = result.mappings().first()
         return dict(row) if row else None
+
+    async def delete_connection_by_ig_user(self, ig_user_id: str) -> None:
+        await self.session.execute(
+            text("delete from public.instagram_connections where ig_user_id = :ig_user_id"),
+            {"ig_user_id": ig_user_id},
+        )
+        await self.session.commit()
+
+    async def create_connection_for_workspace(
+        self,
+        *,
+        workspace_id: UUID,
+        ig_user_id: str,
+        ig_username: str,
+        access_token: str,
+        scopes: list[str],
+    ) -> None:
+        await self.session.execute(
+            text(
+                """
+                insert into public.instagram_connections
+                  (workspace_id, ig_user_id, ig_username, access_token_enc, scopes)
+                values
+                  (:workspace_id, :ig_user_id, :ig_username, :access_token_enc, :scopes)
+                """
+            ),
+            {
+                "workspace_id": workspace_id,
+                "ig_user_id": ig_user_id,
+                "ig_username": ig_username,
+                "access_token_enc": access_token.encode("utf-8"),
+                "scopes": scopes,
+            },
+        )
+        await self.session.commit()
+

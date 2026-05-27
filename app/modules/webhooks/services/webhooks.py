@@ -17,10 +17,28 @@ class WebhookService:
 
     async def handle_instagram(self, body: bytes, signature: str | None) -> dict[str, bool]:
         if self.settings.instagram_webhook_secret:
-            expected = signature or ""
-            if expected.startswith("sha256="):
-                expected = expected.removeprefix("sha256=")
+            if not signature:
+                import logging
+                logging.getLogger("app.webhooks").warning(
+                    "Instagram webhook signature validation failed: X-Hub-Signature-256 header is missing!"
+                )
+                raise ApiError(
+                    status_code=401, code="invalid_signature", message="Missing signature"
+                )
+            expected = signature.removeprefix("sha256=") if signature.startswith("sha256=") else signature
             if not verify_hmac_hex(body, expected, self.settings.instagram_webhook_secret):
+                import logging
+                import hmac
+                from hashlib import sha256
+                computed = hmac.new(self.settings.instagram_webhook_secret.encode("utf-8"), body, sha256).hexdigest()
+                logging.getLogger("app.webhooks").warning(
+                    f"Instagram webhook signature validation failed!\n"
+                    f"  - Body length: {len(body)} bytes\n"
+                    f"  - Signature in Header (X-Hub-Signature-256): '{signature}'\n"
+                    f"  - Cleaned Header Signature: '{expected}'\n"
+                    f"  - Computed Signature using Secret: '{computed}'\n"
+                    f"  - Secret used: '{self.settings.instagram_webhook_secret[:4]}...{self.settings.instagram_webhook_secret[-4:]}' (len={len(self.settings.instagram_webhook_secret)})"
+                )
                 raise ApiError(
                     status_code=401, code="invalid_signature", message="Invalid signature"
                 )

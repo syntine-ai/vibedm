@@ -71,6 +71,25 @@ class FakeInstagramRepository:
             return self.workspace
         return None
 
+    async def disconnect(self, workspace_id: UUID) -> None:
+        if self.connection and self.connection["workspace_id"] == workspace_id:
+            self.connection = None
+
+    async def delete_connection_by_ig_user(self, ig_user_id: str) -> None:
+        if self.connection and self.connection["ig_user_id"] == ig_user_id:
+            self.connection = None
+
+    async def create_connection_for_workspace(
+        self, workspace_id: UUID, ig_user_id: str, ig_username: str, access_token: str, scopes: list[str]
+    ) -> None:
+        self.connection = {
+            "workspace_id": workspace_id,
+            "ig_user_id": ig_user_id,
+            "ig_username": ig_username,
+            "access_token": access_token,
+            "scopes": scopes,
+        }
+
 
 async def test_start_oauth_generates_instagram_url() -> None:
     settings = Settings(
@@ -204,4 +223,54 @@ async def test_complete_oauth_reconnect_success() -> None:
     assert res.workspace["ig_user_id"] == "ig-12345"
     assert res.workspace["plan"] == "free"
     assert res.workspace["active"] is True
+
+
+async def test_complete_oauth_reconnect_to_existing_workspace_success() -> None:
+    settings = Settings(
+        instagram_app_id="my-app-id",
+        instagram_app_secret="my-app-secret",
+        instagram_redirect_uri="http://localhost/callback",
+    )
+    repo = FakeInstagramRepository()
+
+    # Pre-populate workspace and a connection
+    await repo.create_workspace_with_connection(
+        owner_id=UUID("22222222-2222-2222-2222-222222222222"),
+        name="my-workspace",
+        ig_user_id="ig-old",
+        ig_username="old.username",
+        access_token="old-token",
+        scopes=["old-scope"],
+    )
+
+    service = InstagramService(repository=repo, settings=settings)
+    user = CurrentUser(id="22222222-2222-2222-2222-222222222222", email="user@test.com", claims={})
+
+    state = sign_state({"user_id": str(user.id)}, settings.instagram_app_secret or "dev")
+
+    # Mock exchange_code to return a new profile/token
+    fake_profile = InstagramProfile(
+        ig_user_id="ig-new-reconnect",
+        ig_username="new.username.reconnected",
+        access_token="new-token-reconnected",
+        scopes=["new-scope"],
+    )
+    service.provider.exchange_code = AsyncMock(return_value=fake_profile)
+
+    # Pass the existing workspace_id to complete_oauth
+    existing_workspace_id = UUID("11111111-1111-1111-1111-111111111111")
+    res = await service.complete_oauth(
+        user=user, code="auth-code-reconnect", state=state, workspace_id=existing_workspace_id
+    )
+
+    # Assert returned workspace matches existing workspace details, not a newly created one
+    assert res.workspace["id"] == existing_workspace_id
+    assert res.workspace["ig_username"] == "new.username.reconnected"
+    assert res.workspace["ig_user_id"] == "ig-new-reconnect"
+
+    # Assert new connection is linked to the existing workspace in the repository
+    assert repo.connection["workspace_id"] == existing_workspace_id
+    assert repo.connection["ig_user_id"] == "ig-new-reconnect"
+    assert repo.connection["access_token"] == "new-token-reconnected"
+
 
