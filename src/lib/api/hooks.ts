@@ -131,6 +131,18 @@ export function useStartInstagramOauth(intent: "onboarding" | "add_workspace") {
   });
 }
 
+export function useInstagramMediaQuery(
+  workspaceId: string | null | undefined,
+  query?: { limit?: number; after?: string },
+) {
+  return useQuery({
+    queryKey: workspaceId ? ["instagram", workspaceId, "media", query ?? {}] : ["instagram", "media", "none"],
+    queryFn: () => instagramApi.media(workspaceId!, query),
+    enabled: Boolean(workspaceId),
+  });
+}
+
+
 export function useWorkspacesQuery(enabled = true) {
   return useQuery({
     queryKey: queryKeys.workspaces,

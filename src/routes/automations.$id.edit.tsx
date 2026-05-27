@@ -9,6 +9,7 @@ import {
   useAutomationQuery,
   useAutomationStatusMutation,
   useCreateAutomationMutation,
+  useInstagramMediaQuery,
   useTestTriggerMutation,
   useUpdateAutomationMutation,
 } from "@/lib/api/hooks";
@@ -219,13 +220,22 @@ function EditorPage() {
 
         {trigger && (
           <Section title="Trigger Config" subtitle="Keywords and source configuration">
-            {(trigger === "comment-post" || trigger === "story-reply") && (
-              <FormField label={trigger === "comment-post" ? "Post or Reel ID" : "Story ID"}>
+            {trigger === "comment-post" && (
+              <FormField label="Select Post or Reel">
+                <InstagramMediaSelector
+                  workspaceId={activeWorkspace.id}
+                  selectedId={postId}
+                  onChange={setPostId}
+                />
+              </FormField>
+            )}
+            {trigger === "story-reply" && (
+              <FormField label="Story ID">
                 <input
                   className="ipt"
                   value={postId}
                   onChange={(event) => setPostId(event.target.value)}
-                  placeholder="Instagram media ID"
+                  placeholder="Instagram story ID"
                 />
               </FormField>
             )}
@@ -320,3 +330,152 @@ export function InputStyles() {
 .ipt:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(61,58,238,0.12); }`}</style>
   );
 }
+
+function InstagramMediaSelector({
+  workspaceId,
+  selectedId,
+  onChange,
+}: {
+  workspaceId: string;
+  selectedId: string;
+  onChange: (id: string) => void;
+}) {
+  const [after, setAfter] = useState<string | undefined>(undefined);
+  const [accumulatedMedia, setAccumulatedMedia] = useState<any[]>([]);
+  const [filter, setFilter] = useState<"ALL" | "REEL" | "POST">("ALL");
+  const { data, isLoading, error } = useInstagramMediaQuery(workspaceId, { limit: 12, after });
+
+  useEffect(() => {
+    if (data?.data) {
+      setAccumulatedMedia((prev) => {
+        const combined = [...prev, ...data.data];
+        const unique = combined.filter(
+          (item, idx, self) => self.findIndex((x) => x.id === item.id) === idx
+        );
+        return unique;
+      });
+    }
+  }, [data]);
+
+  const loadMore = () => {
+    const nextCursor = data?.paging?.cursors?.after;
+    if (nextCursor) {
+      setAfter(nextCursor);
+    }
+  };
+
+  const filteredMedia = accumulatedMedia.filter((media) => {
+    if (filter === "ALL") return true;
+    if (filter === "REEL") return media.media_type === "VIDEO";
+    if (filter === "POST") return media.media_type === "IMAGE" || media.media_type === "CAROUSEL_ALBUM";
+    return true;
+  });
+
+  if (isLoading && accumulatedMedia.length === 0) {
+    return <div className="text-center py-6 text-sm text-muted-foreground animate-pulse">Loading posts & reels...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-6 text-sm text-destructive">Failed to load posts. Make sure your Instagram connection is active.</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3 border-b border-border/40 pb-3">
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer ${
+            selectedId === ""
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-card hover:bg-muted text-muted-foreground"
+          }`}
+        >
+          ✨ Apply to all posts/reels
+        </button>
+
+        <div className="flex items-center gap-1 bg-muted p-1 rounded-lg border border-border/40 shrink-0">
+          {(["ALL", "REEL", "POST"] as const).map((type) => (
+            <button
+              type="button"
+              key={type}
+              onClick={() => setFilter(type)}
+              className={`px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition cursor-pointer select-none ${
+                filter === type
+                  ? "bg-card text-foreground shadow-sm font-extrabold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {type === "ALL" ? "All" : type === "REEL" ? "Reels" : "Posts"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {filteredMedia.map((media) => {
+          const isSelected = selectedId === media.id;
+          const isVideo = media.media_type === "VIDEO";
+          const isCarousel = media.media_type === "CAROUSEL_ALBUM";
+          
+          return (
+            <button
+              type="button"
+              key={media.id}
+              onClick={() => onChange(media.id)}
+              className={`relative overflow-hidden rounded-xl border aspect-[4/5] text-left transition select-none flex flex-col group cursor-pointer ${
+                isSelected
+                  ? "border-primary ring-2 ring-primary/20 bg-accent/40"
+                  : "border-border bg-card hover:border-primary/50"
+              }`}
+            >
+              <div className="relative flex-1 bg-black overflow-hidden">
+                <img
+                  src={media.thumbnail_url || media.media_url}
+                  alt={media.caption || "Instagram media"}
+                  className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
+                
+                <span className="absolute top-2 left-2 text-[9px] font-bold uppercase px-2 py-0.5 rounded-md bg-black/60 text-white backdrop-blur-[2px]">
+                  {isVideo ? "Reel" : isCarousel ? "Carousel" : "Post"}
+                </span>
+
+                {isSelected && (
+                  <div className="absolute inset-0 bg-primary/10 border-4 border-primary rounded-xl flex items-center justify-center">
+                    <span className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow">✓</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-2.5 h-[56px] shrink-0 border-t border-border bg-card">
+                <p className="text-[11px] leading-tight text-foreground line-clamp-2">
+                  {media.caption || "(No caption)"}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+
+        {filteredMedia.length === 0 && (
+          <div className="col-span-full py-12 text-center text-sm text-muted-foreground">
+            No {filter === "REEL" ? "reels" : filter === "POST" ? "posts" : "items"} loaded. Click "Show More" below to fetch more.
+          </div>
+        )}
+      </div>
+
+      {data?.paging?.cursors?.after && (
+        <div className="text-center pt-2">
+          <button
+            type="button"
+            onClick={loadMore}
+            className="h-9 px-4 rounded-lg border border-border text-xs font-semibold hover:bg-muted transition cursor-pointer"
+          >
+            Show More
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+

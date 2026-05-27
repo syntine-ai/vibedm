@@ -121,6 +121,12 @@ export const instagramApi = {
       workspaceScoped: true,
       workspaceId,
     }),
+  media: (workspaceId: string, query?: { limit?: number; after?: string }) =>
+    api.request<{ data: any[]; paging?: { cursors?: { after?: string } } }>("/api/v1/instagram/media", {
+      workspaceScoped: true,
+      workspaceId,
+      query,
+    }),
 };
 
 export const dashboardApi = {
