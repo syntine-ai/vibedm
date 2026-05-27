@@ -82,12 +82,13 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                             step_entry["response"] = {"message_id": f"mock-dm-{automation_run_id}"}
                             step_entry["status"] = "succeeded"
                         else:
-                            # v25.0 Messages API call
+                            # v25.0 Messages API call: if comment_id is present, send as a private reply to comment
+                            recipient = {"comment_id": comment_id} if comment_id else {"id": sender_id}
                             res = await client.post(
                                 "https://graph.instagram.com/v25.0/me/messages",
                                 params={"access_token": token},
                                 json={
-                                    "recipient": {"id": sender_id},
+                                    "recipient": recipient,
                                     "message": {"text": message_text},
                                 }
                             )
@@ -125,11 +126,12 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                 step_entry["response"] = {"message_id": f"mock-prompt-{automation_run_id}"}
                                 step_entry["status"] = "succeeded"
                             else:
+                                recipient = {"comment_id": comment_id} if comment_id else {"id": sender_id}
                                 res = await client.post(
                                     "https://graph.instagram.com/v25.0/me/messages",
                                     params={"access_token": token},
                                     json={
-                                        "recipient": {"id": sender_id},
+                                        "recipient": recipient,
                                         "message": {"text": prompt_text},
                                     }
                                 )
