@@ -19,7 +19,7 @@ function PrivacyPolicy() {
             <ArrowLeft className="size-4" /> Back
           </Link>
           <h1 className="text-3xl font-bold">Privacy Policy</h1>
-          <p className="text-muted-foreground mt-2">Last updated: May 13, 2024</p>
+          <p className="text-muted-foreground mt-2">Last updated: May 27, 2026</p>
         </div>
 
         <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none space-y-6 text-foreground/90">
