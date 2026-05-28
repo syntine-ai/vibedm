@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     public_api_prefix: str = "/api/public"
     environment: str = "development"
 
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:54322/postgres"
+    database_url: str = "postgresql+asyncpg://postgres:ymd9fsp71T5a8Ozm@db.xvhdeljybdhuvtdkshgb.supabase.co:5432/postgres"
     supabase_url: str = ""
     supabase_service_role_key: str = ""
     supabase_jwt_secret: str = "dev-secret"
