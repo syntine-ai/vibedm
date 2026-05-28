@@ -1,5 +1,5 @@
-from __future__ import annotations
-
+import asyncio
+from contextlib import asynccontextmanager
 from typing import Any, cast
 
 from fastapi import FastAPI
@@ -23,11 +23,32 @@ from app.modules.dashboard.routers.dashboard import router as dashboard_router
 from app.modules.instagram.routers.instagram import router as instagram_router
 from app.modules.webhooks.routers.webhooks import router as webhooks_router
 from app.modules.workspaces.routers.workspaces import router as workspaces_router
+from app.worker import run_worker
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    settings = get_settings()
+    worker_task = None
+    if settings.run_worker_in_api:
+        print("⚡ [API] Starting background worker in API process...")
+        worker_task = asyncio.create_task(run_worker())
+    
+    yield
+    
+    if worker_task:
+        print("⚡ [API] Stopping background worker...")
+        worker_task.cancel()
+        try:
+            await worker_task
+        except asyncio.CancelledError:
+            pass
+        print("⚡ [API] Background worker stopped successfully.")
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title=settings.app_name, version="0.1.0")
+    app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
 
     app.add_exception_handler(ApiError, cast(Any, api_error_handler))
     app.add_exception_handler(StarletteHTTPException, cast(Any, http_error_handler))

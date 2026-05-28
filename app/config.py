@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     job_worker_id: str = ""
     job_poll_interval_seconds: float = 2
     job_lock_timeout_minutes: int = 15
+    run_worker_in_api: bool = True
 
     log_level: str = "INFO"
     log_json: bool = True
