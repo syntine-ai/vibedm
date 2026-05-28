@@ -51,7 +51,7 @@ class Settings(BaseSettings):
 
     @property
     def allowed_origins(self) -> list[str]:
-        return [origin.strip() for origin in self.frontend_origin.split(",") if origin.strip()]
+        return [origin.strip().rstrip("/") for origin in self.frontend_origin.split(",") if origin.strip()]
 
     @property
     def allowed_hosts(self) -> list[str]:

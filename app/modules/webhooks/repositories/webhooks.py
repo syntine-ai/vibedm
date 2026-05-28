@@ -135,3 +135,30 @@ class WebhookRepository:
         )
         await self.session.commit()
 
+    async def update_contact_leads(
+        self,
+        workspace_id: UUID,
+        ig_user_id: str,
+        email: str | None = None,
+        phone: str | None = None,
+    ) -> None:
+        await self.session.execute(
+            text(
+                """
+                update public.contacts
+                   set email = coalesce(:email, email),
+                       phone = coalesce(:phone, phone),
+                       updated_at = now()
+                 where workspace_id = :workspace_id and ig_user_id = :ig_user_id
+                """
+            ),
+            {
+                "workspace_id": workspace_id,
+                "ig_user_id": ig_user_id,
+                "email": email,
+                "phone": phone,
+            },
+        )
+        await self.session.commit()
+
+

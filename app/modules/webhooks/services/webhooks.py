@@ -112,6 +112,20 @@ class WebhookService:
         if not text_content:
             return
 
+        # Automatic Lead Parsing Scanner
+        import re
+        email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text_content)
+        phone_match = re.search(r'(?:\+?\d{1,3}[- ]?)?\(?\d{3}\)?[- ]?\d{3}[- ]?\d{4}', text_content)
+        if email_match or phone_match:
+            email = email_match.group(0) if email_match else None
+            phone = phone_match.group(0) if phone_match else None
+            await self.repository.update_contact_leads(
+                workspace_id=workspace_id,
+                ig_user_id=sender_id,
+                email=email,
+                phone=phone,
+            )
+
         active_automations = await self.repository.list_active_automations(workspace_id)
         for auto in active_automations:
             trigger_type = auto.get("trigger_type")
@@ -120,12 +134,14 @@ class WebhookService:
             if trigger_type == "dm" and not is_story_reply:
                 keywords = trigger_config.get("keywords") or []
                 match_mode = trigger_config.get("match") or "any"
-                if self._check_keywords(text_content, keywords, match_mode):
+                any_kw = trigger_config.get("any_keyword", False) or (not keywords and trigger_config.get("any_keyword") is None)
+                if self._check_keywords(text_content, keywords, match_mode, any_kw):
                     await self._trigger_run(workspace_id, auto["id"], sender_id, None, text_content, msg_event)
             elif trigger_type == "story_reply" and is_story_reply:
                 keywords = trigger_config.get("keywords") or []
                 match_mode = trigger_config.get("match") or "any"
-                if self._check_keywords(text_content, keywords, match_mode):
+                any_kw = trigger_config.get("any_keyword", False) or (not keywords and trigger_config.get("any_keyword") is None)
+                if self._check_keywords(text_content, keywords, match_mode, any_kw):
                     await self._trigger_run(workspace_id, auto["id"], sender_id, None, text_content, msg_event)
 
     async def _process_comment_event(self, entry_id: str, value: dict) -> None:
@@ -156,7 +172,8 @@ class WebhookService:
                     
                 keywords = trigger_config.get("keywords") or []
                 match_mode = trigger_config.get("match") or "any"
-                if self._check_keywords(comment_text, keywords, match_mode):
+                any_kw = trigger_config.get("any_keyword", False) or (not keywords and trigger_config.get("any_keyword") is None)
+                if self._check_keywords(comment_text, keywords, match_mode, any_kw):
                     await self._trigger_run(
                         workspace_id=workspace_id,
                         automation_id=auto["id"],
@@ -172,9 +189,11 @@ class WebhookService:
                         },
                     )
 
-    def _check_keywords(self, text: str, keywords: list[str], match_mode: str) -> bool:
-        if not keywords:
+    def _check_keywords(self, text: str, keywords: list[str], match_mode: str, any_keyword: bool = False) -> bool:
+        if any_keyword:
             return True
+        if not keywords:
+            return False
         text_lower = text.lower().strip()
         if match_mode == "all":
             return all(k.lower().strip() in text_lower for k in keywords)
