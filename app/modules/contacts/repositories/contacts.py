@@ -26,16 +26,16 @@ class ContactRepository:
                 from public.contacts
                 where workspace_id = :workspace_id
                   and (
-                    :source_automation_id is null
-                    or source_automation_id = :source_automation_id
+                    cast(:source_automation_id as uuid) is null
+                    or source_automation_id = cast(:source_automation_id as uuid)
                   )
-                  and (:tag is null or :tag = any(tags))
+                  and (cast(:tag as text) is null or cast(:tag as text) = any(tags))
                   and (
-                    :q is null or
-                    coalesce(ig_username::text, '') ilike '%' || :q || '%' or
-                    coalesce(name, '') ilike '%' || :q || '%' or
-                    coalesce(email::text, '') ilike '%' || :q || '%' or
-                    coalesce(phone, '') ilike '%' || :q || '%'
+                    cast(:q as text) is null or
+                    coalesce(ig_username::text, '') ilike '%' || cast(:q as text) || '%' or
+                    coalesce(name, '') ilike '%' || cast(:q as text) || '%' or
+                    coalesce(email::text, '') ilike '%' || cast(:q as text) || '%' or
+                    coalesce(phone, '') ilike '%' || cast(:q as text) || '%'
                   )
                 order by created_at desc
                 """
