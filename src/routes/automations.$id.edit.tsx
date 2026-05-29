@@ -159,10 +159,11 @@ function EditorPage() {
 
     // Load rich states
     setOpeningMessageEnabled(!!config.opening_message_enabled);
-    if (config.opening_message) {
+    const openMsg = config.opening_message as any;
+    if (openMsg) {
       setOpeningMessage({
-        text: config.opening_message.text || "",
-        buttonText: config.opening_message.buttonText || "Send me the link"
+        text: openMsg.text || "",
+        buttonText: openMsg.buttonText || "Send me the link"
       });
     }
     setFollowUpEnabled(!!config.follow_up_enabled);
@@ -251,7 +252,7 @@ function EditorPage() {
       const newStep: AutomationStep = {
         order: 1,
         action_type: "send_dm",
-        config: buildDefaultStepConfig(type)
+        config: buildDefaultStepConfig(type) as any
       };
       setSteps([newStep]);
     } else {
@@ -263,7 +264,7 @@ function EditorPage() {
       const newStep: AutomationStep = {
         order: nextOrder,
         action_type: actionType,
-        config: buildDefaultStepConfig(type)
+        config: buildDefaultStepConfig(type) as any
       };
       setSteps([...steps, newStep]);
     }
@@ -311,16 +312,19 @@ function EditorPage() {
     };
     
     // Automatically keep compatibility field "message" synced for the backend DMs
-    const stepType = reordered[index].config.type;
-    if (stepType === "card") {
-      reordered[index].config.message = `${reordered[index].config.title || ""}\n${reordered[index].config.subtitle || ""}`.trim() || "Card message";
-    } else if (stepType === "image") {
-      reordered[index].config.message = `Image URL: ${reordered[index].config.image_url || ""}`.trim() || "Image message";
-    } else if (stepType === "lead_form") {
-      const fieldType = reordered[index].config.field_type || "email";
-      reordered[index].action_type = fieldType === "email" ? "ask_for_email" : "ask_for_phone";
-    } else if (stepType === "ask_follow") {
-      reordered[index].action_type = "tag_contact";
+    const config = reordered[index].config as any;
+    if (config) {
+      const stepType = config.type;
+      if (stepType === "card") {
+        config.message = `${config.title || ""}\n${config.subtitle || ""}`.trim() || "Card message";
+      } else if (stepType === "image") {
+        config.message = `Image URL: ${config.image_url || ""}`.trim() || "Image message";
+      } else if (stepType === "lead_form") {
+        const fieldType = config.field_type || "email";
+        reordered[index].action_type = fieldType === "email" ? "ask_for_email" : "ask_for_phone";
+      } else if (stepType === "ask_follow") {
+        reordered[index].action_type = "tag_contact";
+      }
     }
 
     setSteps(reordered);
@@ -596,105 +600,108 @@ function EditorPage() {
           )}
 
           {/* Sequential Step Cards */}
-          {steps.map((step, idx) => (
-            <div
-              key={step.id || idx}
-              className="bg-card rounded-2xl border border-border/60 shadow-[var(--shadow-card)] p-5 space-y-4 relative transition-all duration-300 animate-in fade-in"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between pb-2 border-b border-border/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-full bg-black text-white text-[13px] font-bold flex items-center justify-center">
-                    {idx + 1}
+          {steps.map((step, idx) => {
+            const stepConfig = (step.config || {}) as any;
+            return (
+              <div
+                key={step.id || idx}
+                className="bg-card rounded-2xl border border-border/60 shadow-[var(--shadow-card)] p-5 space-y-4 relative transition-all duration-300 animate-in fade-in"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-full bg-black text-white text-[13px] font-bold flex items-center justify-center">
+                      {idx + 1}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[14px] font-bold text-foreground">
+                        {stepConfig.type === "card" && "Card Message"}
+                        {stepConfig.type === "text" && "Text Message"}
+                        {stepConfig.type === "image" && "Image Response"}
+                        {stepConfig.type === "ask_follow" && "Ask For Follow"}
+                        {stepConfig.type === "lead_form" && "Lead Forms"}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-[14px] font-bold text-foreground">
-                      {step.config.type === "card" && "Card Message"}
-                      {step.config.type === "text" && "Text Message"}
-                      {step.config.type === "image" && "Image Response"}
-                      {step.config.type === "ask_follow" && "Ask For Follow"}
-                      {step.config.type === "lead_form" && "Lead Forms"}
-                    </span>
+
+                  <div className="flex items-center gap-1">
+                    {openingMessageEnabled && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => moveStep(idx, "up")}
+                          disabled={idx === 0}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 transition cursor-pointer"
+                        >
+                          <ChevronUp className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveStep(idx, "down")}
+                          disabled={idx === steps.length - 1}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 transition cursor-pointer"
+                        >
+                          <ChevronDown className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => duplicateStep(idx)}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center border border-border hover:bg-muted text-muted-foreground transition cursor-pointer"
+                          title="Duplicate Step"
+                        >
+                          <Copy className="size-3.5" />
+                        </button>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => deleteStep(idx)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center border border-border hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition cursor-pointer"
+                      title="Delete Step"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1">
-                  {openingMessageEnabled && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => moveStep(idx, "up")}
-                        disabled={idx === 0}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 transition cursor-pointer"
-                      >
-                        <ChevronUp className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moveStep(idx, "down")}
-                        disabled={idx === steps.length - 1}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 transition cursor-pointer"
-                      >
-                        <ChevronDown className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => duplicateStep(idx)}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center border border-border hover:bg-muted text-muted-foreground transition cursor-pointer"
-                        title="Duplicate Step"
-                      >
-                        <Copy className="size-3.5" />
-                      </button>
-                    </>
+                {/* Step Editor Content */}
+                <div className="space-y-4">
+                  {stepConfig.type === "text" && (
+                    <TextResponseEditor
+                      config={stepConfig}
+                      onChange={(updates) => updateStepConfig(idx, updates)}
+                    />
                   )}
-                  <button
-                    type="button"
-                    onClick={() => deleteStep(idx)}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center border border-border hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition cursor-pointer"
-                    title="Delete Step"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
+                  {stepConfig.type === "card" && (
+                    <CardResponseEditor
+                      config={stepConfig}
+                      onChange={(updates) => updateStepConfig(idx, updates)}
+                      workspaceId={activeWorkspace.id}
+                    />
+                  )}
+                  {stepConfig.type === "image" && (
+                    <ImageResponseEditor
+                      config={stepConfig}
+                      onChange={(updates) => updateStepConfig(idx, updates)}
+                      workspaceId={activeWorkspace.id}
+                    />
+                  )}
+                  {stepConfig.type === "ask_follow" && (
+                    <AskFollowResponseEditor
+                      config={stepConfig}
+                      onChange={(updates) => updateStepConfig(idx, updates)}
+                    />
+                  )}
+                  {stepConfig.type === "lead_form" && (
+                    <LeadFormResponseEditor
+                      config={stepConfig}
+                      onChange={(updates) => updateStepConfig(idx, updates)}
+                    />
+                  )}
                 </div>
               </div>
-
-              {/* Step Editor Content */}
-              <div className="space-y-4">
-                {step.config.type === "text" && (
-                  <TextResponseEditor
-                    config={step.config}
-                    onChange={(updates) => updateStepConfig(idx, updates)}
-                  />
-                )}
-                {step.config.type === "card" && (
-                  <CardResponseEditor
-                    config={step.config}
-                    onChange={(updates) => updateStepConfig(idx, updates)}
-                    workspaceId={activeWorkspace.id}
-                  />
-                )}
-                {step.config.type === "image" && (
-                  <ImageResponseEditor
-                    config={step.config}
-                    onChange={(updates) => updateStepConfig(idx, updates)}
-                    workspaceId={activeWorkspace.id}
-                  />
-                )}
-                {step.config.type === "ask_follow" && (
-                  <AskFollowResponseEditor
-                    config={step.config}
-                    onChange={(updates) => updateStepConfig(idx, updates)}
-                  />
-                )}
-                {step.config.type === "lead_form" && (
-                  <LeadFormResponseEditor
-                    config={step.config}
-                    onChange={(updates) => updateStepConfig(idx, updates)}
-                  />
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Add Response Button Trigger */}
           {(!openingMessageEnabled && steps.length > 0) ? null : (
