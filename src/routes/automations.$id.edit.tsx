@@ -316,6 +316,9 @@ function EditorPage() {
       reordered[index].config.message = `${reordered[index].config.title || ""}\n${reordered[index].config.subtitle || ""}`.trim() || "Card message";
     } else if (stepType === "image") {
       reordered[index].config.message = `Image URL: ${reordered[index].config.image_url || ""}`.trim() || "Image message";
+    } else if (stepType === "lead_form") {
+      const fieldType = reordered[index].config.field_type || "email";
+      reordered[index].action_type = fieldType === "email" ? "ask_for_email" : "ask_for_phone";
     }
 
     setSteps(reordered);
@@ -676,15 +679,10 @@ function EditorPage() {
                   />
                 )}
                 {step.config.type === "ask_follow" && (
-                  <div className="rounded-xl bg-muted/30 p-4 border border-border text-center space-y-1">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary mx-auto flex items-center justify-center mb-1">
-                      <UserPlus className="size-5" />
-                    </div>
-                    <div className="text-sm font-semibold">Ask For Follow Prompt</div>
-                    <div className="text-xs text-muted-foreground max-w-sm mx-auto">
-                      Sends a high-engagement follow prompt card. Follow events are automatically verified in real-time.
-                    </div>
-                  </div>
+                  <AskFollowResponseEditor
+                    config={step.config}
+                    onChange={(updates) => updateStepConfig(idx, updates)}
+                  />
                 )}
                 {step.config.type === "lead_form" && (
                   <LeadFormResponseEditor
@@ -1560,29 +1558,96 @@ function LeadFormResponseEditor({
   config: StepConfig;
   onChange: (updates: Partial<StepConfig>) => void;
 }) {
+  const currentFieldType = config.field_type || "email";
+  
+  // Default values
+  const defaultPrompt = currentFieldType === "email"
+    ? "Please reply with your email address to continue..."
+    : "Please reply with your phone number to continue...";
+    
+  const currentPrompt = config.message || defaultPrompt;
+
+  const handleFieldTypeChange = (newType: "email" | "phone") => {
+    const currentDefault = currentFieldType === "email"
+      ? "Please reply with your email address to continue..."
+      : "Please reply with your phone number to continue...";
+      
+    const nextDefault = newType === "email"
+      ? "Please reply with your email address to continue..."
+      : "Please reply with your phone number to continue...";
+
+    const updates: Partial<StepConfig> = { field_type: newType };
+    // Only switch prompt automatically if they haven't customized it yet
+    if (!config.message || config.message === currentDefault) {
+      updates.message = nextDefault;
+    }
+    onChange(updates);
+  };
+
   return (
     <div className="space-y-4">
       <FormField label="Form Input Field">
         <select
           className="ipt"
-          value={config.field_type || "email"}
-          onChange={(e) => onChange({ field_type: e.target.value as any })}
+          value={currentFieldType}
+          onChange={(e) => handleFieldTypeChange(e.target.value as any)}
         >
           <option value="email">Email capture form</option>
           <option value="phone">Phone number capture form</option>
         </select>
       </FormField>
 
-      <div className="rounded-xl bg-muted/40 p-4 border border-border space-y-2">
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block select-none">Real-time validation preview</span>
-        <div className="w-full bg-white rounded-lg border border-border/80 p-3 text-xs leading-normal">
-          {config.field_type === "email" ? (
-            <span>"Please reply with your email address to continue..."</span>
-          ) : (
-            <span>"Please reply with your phone number to continue..."</span>
-          )}
+      <FormField label="Custom Prompt Text">
+        <textarea
+          rows={3}
+          className="ipt min-h-[80px] py-2.5 bg-white"
+          value={currentPrompt}
+          onChange={(e) => onChange({ message: e.target.value })}
+          placeholder={defaultPrompt}
+        />
+        <span className="text-[10px] text-muted-foreground mt-1 block">
+          Custom prompt sent to users. They will reply directly to this message to submit their lead info.
+        </span>
+      </FormField>
+    </div>
+  );
+}
+
+// 5. ASK FOR FOLLOW EDITOR
+function AskFollowResponseEditor({
+  config,
+  onChange
+}: {
+  config: StepConfig;
+  onChange: (updates: Partial<StepConfig>) => void;
+}) {
+  const defaultPrompt = "To get access to the download link, please make sure you're following our account! Click follow, then reply with 'Done' to continue! 😊";
+  const currentPrompt = config.message || defaultPrompt;
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl bg-primary/5 p-4 border border-primary/10 text-center space-y-1.5 max-w-md mx-auto">
+        <div className="w-9 h-9 rounded-full bg-primary/15 text-primary mx-auto flex items-center justify-center">
+          <UserPlus className="size-4.5" />
+        </div>
+        <div className="text-[13px] font-bold text-foreground">Ask For Follow Prompt</div>
+        <div className="text-[11px] text-muted-foreground leading-normal font-medium">
+          Sends an automated follow invitation prompt. The flow pauses here until the contact replies or follows.
         </div>
       </div>
+
+      <FormField label="Custom Prompt Text">
+        <textarea
+          rows={3}
+          className="ipt min-h-[80px] py-2.5 bg-white"
+          value={currentPrompt}
+          onChange={(e) => onChange({ message: e.target.value })}
+          placeholder={defaultPrompt}
+        />
+        <span className="text-[10px] text-muted-foreground mt-1 block">
+          Custom prompt text sent to your DMs to request a follow.
+        </span>
+      </FormField>
     </div>
   );
 }
