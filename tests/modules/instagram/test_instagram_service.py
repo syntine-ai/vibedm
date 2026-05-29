@@ -274,3 +274,58 @@ async def test_complete_oauth_reconnect_to_existing_workspace_success() -> None:
     assert repo.connection["access_token"] == "new-token-reconnected"
 
 
+async def test_start_oauth_facebook_login_for_business() -> None:
+    settings = Settings(
+        instagram_app_id="my-app-id",
+        instagram_app_secret="my-app-secret",
+        instagram_redirect_uri="http://localhost/callback",
+        instagram_config_id="3859738497654753",
+    )
+    service = InstagramService(repository=FakeInstagramRepository(), settings=settings)
+    user = CurrentUser(id="22222222-2222-2222-2222-222222222222", email="user@test.com", claims={})
+
+    res = await service.start_oauth(user)
+    assert "https://www.facebook.com/v25.0/dialog/oauth" in res.url
+    assert "client_id=my-app-id" in res.url
+    assert "redirect_uri=http%3A%2F%2Flocalhost%2Fcallback" in res.url
+    assert "config_id=3859738497654753" in res.url
+    assert "response_type=code" in res.url
+    assert "force_reauth=true" in res.url
+
+
+@patch("httpx.AsyncClient.get")
+async def test_exchange_code_facebook_login_for_business_success(mock_get) -> None:
+    settings = Settings(
+        instagram_app_id="real-id",
+        instagram_app_secret="real-secret",
+        instagram_redirect_uri="http://localhost/callback",
+        instagram_config_id="3859738497654753",
+    )
+    provider = InstagramOAuthProvider(settings)
+
+    # Mock the HTTP calls:
+    # 1. GET oauth/access_token
+    # 2. GET me/accounts
+    # 3. GET ig_user_id
+    mock_get.side_effect = [
+        Response(200, json={"access_token": "fb-user-access-token", "scopes": ["custom_scope"]}),
+        Response(200, json={
+            "data": [
+                {
+                    "name": "My Business Page",
+                    "access_token": "fb-page-access-token",
+                    "id": "page-id-999",
+                    "instagram_business_account": {"id": "ig-business-888"}
+                }
+            ]
+        }),
+        Response(200, json={"id": "ig-business-888", "username": "thevijaymarathi", "name": "Vijay Marathi"}),
+    ]
+
+    profile = await provider.exchange_code("fb-code-123")
+    assert profile.ig_user_id == "ig-business-888"
+    assert profile.ig_username == "thevijaymarathi"
+    assert profile.access_token == "fb-page-access-token"
+    assert "custom_scope" in profile.scopes
+
+

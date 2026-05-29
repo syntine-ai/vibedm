@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     instagram_redirect_uri: str = "http://localhost:3000/auth/instagram/callback"
     instagram_webhook_secret: str = ""
     instagram_verify_token: str = "dev-instagram-verify-token"
+    instagram_config_id: str = ""
 
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""

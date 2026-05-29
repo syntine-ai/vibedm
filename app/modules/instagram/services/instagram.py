@@ -45,6 +45,95 @@ class InstagramOAuthProvider:
                 scopes=INSTAGRAM_SCOPES,
             )
 
+        # 1. Configuration-based flow (Facebook Login for Business)
+        if self.settings.instagram_config_id and self.settings.instagram_config_id != "dev":
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                # Step 1: Exchange code for facebook user access token
+                token_res = await client.get(
+                    "https://graph.facebook.com/v25.0/oauth/access_token",
+                    params={
+                        "client_id": self.settings.instagram_app_id,
+                        "client_secret": self.settings.instagram_app_secret,
+                        "redirect_uri": self.settings.instagram_redirect_uri,
+                        "code": code,
+                    },
+                )
+                if token_res.status_code != 200:
+                    raise ApiError(
+                        status_code=400,
+                        code="ig_oauth_failed",
+                        message=f"Failed to exchange Facebook OAuth code: {token_res.text}",
+                    )
+                token_data = token_res.json()
+                user_access_token = token_data.get("access_token")
+                if not user_access_token:
+                    raise ApiError(
+                        status_code=400,
+                        code="ig_oauth_failed",
+                        message="Facebook OAuth exchange did not return access_token",
+                    )
+
+                # Step 2: Query user's connected Facebook Pages and linked Instagram accounts
+                accounts_res = await client.get(
+                    "https://graph.facebook.com/v25.0/me/accounts",
+                    params={
+                        "fields": "name,access_token,instagram_business_account",
+                        "access_token": user_access_token,
+                    },
+                )
+                if accounts_res.status_code != 200:
+                    raise ApiError(
+                        status_code=400,
+                        code="ig_oauth_failed",
+                        message=f"Failed to fetch connected Facebook Pages: {accounts_res.text}",
+                    )
+                accounts_data = accounts_res.json().get("data", [])
+                
+                # Identify the Page with a linked Instagram Business Account
+                page_token = None
+                ig_user_id = None
+                for page in accounts_data:
+                    ig_account = page.get("instagram_business_account")
+                    if ig_account and ig_account.get("id"):
+                        ig_user_id = str(ig_account["id"])
+                        page_token = page.get("access_token")
+                        break
+
+                if not ig_user_id or not page_token:
+                    raise ApiError(
+                        status_code=400,
+                        code="ig_onboarding_failed",
+                        message=(
+                            "No connected Instagram Business/Creator account was found on your Facebook Pages. "
+                            "Please ensure your Instagram account is linked to your Facebook Page in Settings."
+                        ),
+                    )
+
+                # Step 3: Fetch the Instagram Business account profile details
+                profile_res = await client.get(
+                    f"https://graph.facebook.com/v25.0/{ig_user_id}",
+                    params={
+                        "fields": "id,username,name",
+                        "access_token": page_token,
+                    },
+                )
+                if profile_res.status_code != 200:
+                    raise ApiError(
+                        status_code=400,
+                        code="ig_oauth_failed",
+                        message=f"Failed to fetch Instagram profile details: {profile_res.text}",
+                    )
+                profile_data = profile_res.json()
+                ig_username = profile_data.get("username") or profile_data.get("name", "ig_user")
+
+                return InstagramProfile(
+                    ig_user_id=ig_user_id,
+                    ig_username=ig_username,
+                    access_token=page_token,  # We store the Page Access Token for worker automations
+                    scopes=token_data.get("scopes", INSTAGRAM_SCOPES),
+                )
+
+        # 2. Legacy direct Instagram Login flow
         async with httpx.AsyncClient(timeout=15.0) as client:
             # Step 1: Exchange code for short-lived token via Instagram Business Login
             token_res = await client.post(
@@ -129,20 +218,35 @@ class InstagramService:
 
     async def start_oauth(self, user: CurrentUser) -> OAuthStartResponse:
         state = sign_state({"user_id": str(user.id)}, self.settings.instagram_app_secret or "dev")
-        params = urlencode(
-            {
-                "client_id": self.settings.instagram_app_id or "dev-instagram-app",
-                "redirect_uri": self.settings.instagram_redirect_uri,
-                "response_type": "code",
-                "scope": ",".join(INSTAGRAM_SCOPES),
-                "state": state,
-                "force_reauth": "true",
-            }
-        )
-        # Instagram Business Login endpoint — shows Instagram login screen (not Facebook)
-        return OAuthStartResponse(
-            url=f"https://www.instagram.com/oauth/authorize?{params}", state=state
-        )
+        
+        # If config_id is provided, utilize Meta's modern Facebook Login for Business dialog
+        if self.settings.instagram_config_id and self.settings.instagram_config_id != "dev":
+            params = urlencode(
+                {
+                    "client_id": self.settings.instagram_app_id,
+                    "redirect_uri": self.settings.instagram_redirect_uri,
+                    "config_id": self.settings.instagram_config_id,
+                    "state": state,
+                    "response_type": "code",
+                    "force_reauth": "true",
+                }
+            )
+            oauth_url = f"https://www.facebook.com/v25.0/dialog/oauth?{params}"
+        else:
+            # Legacy direct Instagram Login flow
+            params = urlencode(
+                {
+                    "client_id": self.settings.instagram_app_id or "dev-instagram-app",
+                    "redirect_uri": self.settings.instagram_redirect_uri,
+                    "response_type": "code",
+                    "scope": ",".join(INSTAGRAM_SCOPES),
+                    "state": state,
+                    "force_reauth": "true",
+                }
+            )
+            oauth_url = f"https://www.instagram.com/oauth/authorize?{params}"
+            
+        return OAuthStartResponse(url=oauth_url, state=state)
 
     async def complete_oauth(
         self, user: CurrentUser, code: str, state: str, workspace_id: UUID | None = None
