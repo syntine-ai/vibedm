@@ -267,6 +267,22 @@ class AutomationRepository:
             return None
         return row["access_token_enc"].decode("utf-8")
 
+    async def get_workspace_username(self, workspace_id: UUID) -> str | None:
+        result = await self.session.execute(
+            text(
+                """
+                select ig_username
+                from public.instagram_connections
+                where workspace_id = :workspace_id
+                """
+            ),
+            {"workspace_id": workspace_id},
+        )
+        row = result.mappings().first()
+        if not row:
+            return None
+        return row["ig_username"]
+
     async def update_run(
         self,
         run_id: UUID,

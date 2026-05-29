@@ -176,22 +176,42 @@ class WebhookRepository:
         return row["id"] if row else None
 
     async def find_awaiting_run(self, workspace_id: UUID, contact_id: UUID) -> UUID | None:
+        import json
         result = await self.session.execute(
             text(
                 """
-                select id
+                select id, step_trace
                 from public.automation_runs
                 where workspace_id = :workspace_id
                   and contact_id = :contact_id
-                  and status = 'awaiting_interaction'
+                  and status = 'succeeded'
                 order by created_at desc
-                limit 1
+                limit 5
                 """
             ),
             {"workspace_id": workspace_id, "contact_id": contact_id},
         )
-        row = result.mappings().first()
-        return row["id"] if row else None
+        rows = result.mappings().all()
+        for row in rows:
+            trace = row["step_trace"] or []
+            if isinstance(trace, str):
+                try:
+                    trace = json.loads(trace)
+                except Exception:
+                    trace = []
+            elif not isinstance(trace, list):
+                trace = []
+                
+            if not trace:
+                continue
+                
+            last_step = trace[-1] if trace else {}
+            if last_step.get("status") == "succeeded":
+                step_id = last_step.get("step_id")
+                action_type = last_step.get("action_type")
+                if step_id == "opening_message" or action_type in {"ask_for_email", "ask_for_phone", "tag_contact"}:
+                    return row["id"]
+        return None
 
     async def resume_awaiting_run(self, workspace_id: UUID, run_id: UUID) -> None:
         await self.session.execute(

@@ -119,13 +119,8 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                 msg_text = open_msg.get("text") or "Hey there!"
                 btn_text = open_msg.get("buttonText") or ""
                 
-                # Check if this is a comment trigger reply. Private comment replies can ONLY be text-only!
-                # If there's a comment_id, we strip out any buttons/quick replies to avoid Meta errors.
-                # If there's no comment_id (e.g. triggered via DM directly), we can include the button as a quick reply.
-                has_comment_recipient = bool(comment_id)
-                
                 message_payload = {"text": msg_text}
-                if btn_text and not has_comment_recipient:
+                if btn_text:
                     message_payload = {
                         "text": msg_text,
                         "quick_replies": [
@@ -181,6 +176,16 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                 for step in steps:
                     action_type = step.get("action_type")
                     config = step.get("config") or {}
+                    
+                    # Defensive override: sync action_type with config["type"] if mismatch exists
+                    config_type = config.get("type")
+                    if config_type == "ask_follow" and action_type != "tag_contact":
+                        action_type = "tag_contact"
+                    elif config_type == "lead_form":
+                        field_type = config.get("field_type") or "email"
+                        expected_action = "ask_for_email" if field_type == "email" else "ask_for_phone"
+                        if action_type != expected_action:
+                            action_type = expected_action
                     
                     # Skip if this step has already executed successfully in a previous run
                     if any(s.get("step_id") == str(step["id"]) and s.get("status") == "succeeded" for s in step_trace):
@@ -331,12 +336,56 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                     step_entry["status"] = "succeeded"
                                 else:
                                     recipient = {"id": sender_id}
+                                    
+                                    # Fetch workspace username to provide a premium direct follow button
+                                    username = await repo.get_workspace_username(run["workspace_id"])
+                                    
+                                    if username:
+                                        # Send a premium Generic Template (Card) with a direct "Follow Us" link button and a "Done! 👍" confirmation button
+                                        follow_url = f"https://instagram.com/{username}"
+                                        message_payload = {
+                                            "attachment": {
+                                                "type": "template",
+                                                "payload": {
+                                                    "template_type": "generic",
+                                                    "elements": [{
+                                                        "title": "Follow us to continue! 👤",
+                                                        "subtitle": prompt_text[:80],
+                                                        "buttons": [
+                                                            {
+                                                                "type": "web_url",
+                                                                "url": follow_url,
+                                                                "title": "Follow Us 👤"
+                                                            },
+                                                            {
+                                                                "type": "postback",
+                                                                "title": "Done! 👍",
+                                                                "payload": f"step_click_{step['id']}"
+                                                            }
+                                                        ]
+                                                    }]
+                                                }
+                                            }
+                                        }
+                                    else:
+                                        # Fallback to standard message with "Done! 👍" quick reply button
+                                        message_payload = {
+                                            "text": prompt_text,
+                                            "quick_replies": [
+                                                {
+                                                    "content_type": "text",
+                                                    "title": "Done! 👍",
+                                                    "payload": f"step_click_{step['id']}"
+                                                }
+                                            ]
+                                        }
+                                    
                                     res = await client.post(
                                         "https://graph.instagram.com/v25.0/me/messages",
                                         params={"access_token": token},
                                         json={
                                             "recipient": recipient,
-                                            "message": {"text": prompt_text},
+                                            "message": message_payload,
                                         }
                                     )
                                     if res.status_code != 200:
@@ -362,10 +411,12 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                     if final_status == "awaiting_interaction":
                         break
                     
-        # 7. Update the run record status and trace
+        # 7. Update the run record status and trace. Map 'awaiting_interaction' in-memory status
+        # to the database-compatible 'succeeded' enum status to prevent database failures.
+        db_status = "succeeded" if final_status == "awaiting_interaction" else final_status
         await repo.update_run(
             run_id=automation_run_id,
-            status=final_status,
+            status=db_status,
             step_trace=step_trace,
             error=final_error,
         )
