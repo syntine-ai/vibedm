@@ -193,6 +193,35 @@ class AutomationRepository:
         await self.session.commit()
         return dict(result.mappings().one())
 
+    async def create_automation_run(
+        self,
+        workspace_id: UUID,
+        automation_id: UUID,
+        contact_id: UUID | None,
+        trigger_event: dict,
+    ) -> UUID:
+        import json
+        trigger_event_str = json.dumps(trigger_event) if isinstance(trigger_event, (dict, list)) else trigger_event
+        result = await self.session.execute(
+            text(
+                """
+                insert into public.automation_runs
+                  (workspace_id, automation_id, contact_id, status, trigger_event, step_trace)
+                values
+                  (:workspace_id, :automation_id, :contact_id, 'queued', :trigger_event, '[]'::jsonb)
+                returning id
+                """
+            ),
+            {
+                "workspace_id": workspace_id,
+                "automation_id": automation_id,
+                "contact_id": contact_id,
+                "trigger_event": trigger_event_str,
+            },
+        )
+        await self.session.commit()
+        return result.scalar_one()
+
     async def list_runs(self, *, workspace_id: UUID, automation_id: UUID) -> list[dict]:
         result = await self.session.execute(
             text(

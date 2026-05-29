@@ -161,4 +161,48 @@ class WebhookRepository:
         )
         await self.session.commit()
 
+    async def find_contact_by_ig_user(self, workspace_id: UUID, ig_user_id: str) -> UUID | None:
+        result = await self.session.execute(
+            text(
+                """
+                select id
+                from public.contacts
+                where workspace_id = :workspace_id and ig_user_id = :ig_user_id
+                """
+            ),
+            {"workspace_id": workspace_id, "ig_user_id": ig_user_id},
+        )
+        row = result.mappings().first()
+        return row["id"] if row else None
 
+    async def find_awaiting_run(self, workspace_id: UUID, contact_id: UUID) -> UUID | None:
+        result = await self.session.execute(
+            text(
+                """
+                select id
+                from public.automation_runs
+                where workspace_id = :workspace_id
+                  and contact_id = :contact_id
+                  and status = 'awaiting_interaction'
+                order by created_at desc
+                limit 1
+                """
+            ),
+            {"workspace_id": workspace_id, "contact_id": contact_id},
+        )
+        row = result.mappings().first()
+        return row["id"] if row else None
+
+    async def resume_awaiting_run(self, workspace_id: UUID, run_id: UUID) -> None:
+        await self.session.execute(
+            text(
+                """
+                update public.automation_runs
+                set status = 'queued'
+                where id = :run_id
+                """
+            ),
+            {"run_id": run_id},
+        )
+        await self.enqueue_automation_job(workspace_id, run_id)
+        await self.session.commit()

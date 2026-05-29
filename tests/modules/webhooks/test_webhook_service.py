@@ -73,6 +73,7 @@ async def test_handle_instagram_dm_trigger_success(MockRepoClass) -> None:
         ]
     )
     mock_repo.upsert_contact = AsyncMock(return_value="33333333-3333-3333-3333-333333333333")
+    mock_repo.find_contact_by_ig_user = AsyncMock(return_value=None)
     mock_repo.create_automation_run = AsyncMock(return_value="44444444-4444-4444-4444-444444444444")
     mock_repo.enqueue_automation_job = AsyncMock()
 

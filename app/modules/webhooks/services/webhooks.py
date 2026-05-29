@@ -98,6 +98,14 @@ class WebhookService:
         if not workspace_id:
             return
 
+        contact_id = await self.repository.find_contact_by_ig_user(workspace_id, sender_id)
+        if contact_id:
+            # Check if there is an active run in 'awaiting_interaction' state for this contact
+            awaiting_run_id = await self.repository.find_awaiting_run(workspace_id, contact_id)
+            if awaiting_run_id:
+                await self.repository.resume_awaiting_run(workspace_id, awaiting_run_id)
+                return
+
         message = msg_event.get("message") or {}
         postback = msg_event.get("postback") or {}
         

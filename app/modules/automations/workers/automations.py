@@ -57,7 +57,19 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
             return {"status": "failed", "error": "No sender_id"}
 
         trigger_config = automation.get("trigger_config") or {}
-        step_trace = []
+        db_trace = run.get("step_trace") or []
+        if isinstance(db_trace, str):
+            import json
+            try:
+                db_trace = json.loads(db_trace)
+            except Exception:
+                db_trace = []
+        elif not isinstance(db_trace, list):
+            db_trace = []
+            
+        step_trace = list(db_trace)
+        opening_sent = any(s.get("step_id") == "opening_message" and s.get("status") == "succeeded" for s in step_trace)
+        
         final_status = "succeeded"
         final_error = None
         
@@ -102,13 +114,18 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                     
                 step_trace.append(step_entry)
             
-            elif trigger_config.get("opening_message_enabled"):
+            elif trigger_config.get("opening_message_enabled") and not opening_sent:
                 open_msg = trigger_config.get("opening_message") or {}
                 msg_text = open_msg.get("text") or "Hey there!"
                 btn_text = open_msg.get("buttonText") or ""
                 
+                # Check if this is a comment trigger reply. Private comment replies can ONLY be text-only!
+                # If there's a comment_id, we strip out any buttons/quick replies to avoid Meta errors.
+                # If there's no comment_id (e.g. triggered via DM directly), we can include the button as a quick reply.
+                has_comment_recipient = bool(comment_id)
+                
                 message_payload = {"text": msg_text}
-                if btn_text:
+                if btn_text and not has_comment_recipient:
                     message_payload = {
                         "text": msg_text,
                         "quick_replies": [
@@ -146,12 +163,15 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                             raise ValueError(f"Meta Opening DM API failed: {res.text}")
                         step_entry["response"] = res.json()
                         step_entry["status"] = "succeeded"
+                        
+                    # Stop flow here and wait for user reply/interaction!
+                    final_status = "awaiting_interaction"
+                    
                 except Exception as e:
                     step_entry["status"] = "failed"
                     step_entry["response"] = {"error": str(e)}
                     final_status = "failed"
                     final_error = f"Opening message failed: {str(e)}"
-                    step_trace.append(step_entry)
                     
                 step_trace.append(step_entry)
 
@@ -162,6 +182,10 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                     action_type = step.get("action_type")
                     config = step.get("config") or {}
                     
+                    # Skip if this step has already executed successfully in a previous run
+                    if any(s.get("step_id") == str(step["id"]) and s.get("status") == "succeeded" for s in step_trace):
+                        continue
+                        
                     step_entry = {
                         "step_id": str(step["id"]),
                         "action_type": action_type,
@@ -243,7 +267,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                 step_entry["response"] = {"message_id": f"mock-dm-{automation_run_id}"}
                                 step_entry["status"] = "succeeded"
                             else:
-                                recipient = {"comment_id": comment_id} if comment_id else {"id": sender_id}
+                                recipient = {"id": sender_id}
                                 res = await client.post(
                                     "https://graph.instagram.com/v25.0/me/messages",
                                     params={"access_token": token},
@@ -284,7 +308,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                     step_entry["response"] = {"message_id": f"mock-prompt-{automation_run_id}"}
                                     step_entry["status"] = "succeeded"
                                 else:
-                                    recipient = {"comment_id": comment_id} if comment_id else {"id": sender_id}
+                                    recipient = {"id": sender_id}
                                     res = await client.post(
                                         "https://graph.instagram.com/v25.0/me/messages",
                                         params={"access_token": token},
@@ -297,10 +321,31 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                         raise ValueError(f"Meta DM Prompt API failed: {res.text}")
                                     step_entry["response"] = res.json()
                                     step_entry["status"] = "succeeded"
+                                    
+                                # Pause the sequential execution and wait for user's lead submission!
+                                final_status = "awaiting_interaction"
                             elif action_type == "tag_contact":
-                                # Ask For Follow check: mock success
-                                step_entry["response"] = {"status": "succeeded", "reason": "Follow verified successfully"}
-                                step_entry["status"] = "succeeded"
+                                prompt_text = config.get("message") or "To get access to the download link, please make sure you're following our account! Click follow, then reply with 'Done' to continue! 😊"
+                                if is_mock:
+                                    step_entry["response"] = {"status": "succeeded", "reason": "Follow verified successfully"}
+                                    step_entry["status"] = "succeeded"
+                                else:
+                                    recipient = {"id": sender_id}
+                                    res = await client.post(
+                                        "https://graph.instagram.com/v25.0/me/messages",
+                                        params={"access_token": token},
+                                        json={
+                                            "recipient": recipient,
+                                            "message": {"text": prompt_text},
+                                        }
+                                    )
+                                    if res.status_code != 200:
+                                        raise ValueError(f"Meta Follow Prompt API failed: {res.text}")
+                                    step_entry["response"] = res.json()
+                                    step_entry["status"] = "succeeded"
+                                    
+                                # Pause the sequential execution and wait for user's follow action!
+                                final_status = "awaiting_interaction"
                             else:
                                 step_entry["response"] = {"status": "skipped", "reason": "No-op stub"}
                                 step_entry["status"] = "succeeded"
@@ -314,6 +359,8 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                         break
                         
                     step_trace.append(step_entry)
+                    if final_status == "awaiting_interaction":
+                        break
                     
         # 7. Update the run record status and trace
         await repo.update_run(
