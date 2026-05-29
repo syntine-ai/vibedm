@@ -1138,12 +1138,14 @@ function buildDefaultStepConfig(type: StepConfig["type"]): StepConfig {
   }
   if (type === "ask_follow") {
     return {
-      type: "ask_follow"
+      type: "ask_follow",
+      message: "To get access to the download link, please make sure you're following our account! Click follow, then reply with 'Done' to continue! 😊"
     };
   }
   return {
     type: "lead_form",
-    field_type: "email"
+    field_type: "email",
+    message: "Please reply with your email address to continue..."
   };
 }
 
