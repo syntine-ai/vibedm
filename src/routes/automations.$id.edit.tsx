@@ -319,6 +319,8 @@ function EditorPage() {
     } else if (stepType === "lead_form") {
       const fieldType = reordered[index].config.field_type || "email";
       reordered[index].action_type = fieldType === "email" ? "ask_for_email" : "ask_for_phone";
+    } else if (stepType === "ask_follow") {
+      reordered[index].action_type = "tag_contact";
     }
 
     setSteps(reordered);
