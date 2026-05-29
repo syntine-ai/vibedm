@@ -206,7 +206,7 @@ class WebhookRepository:
                 continue
                 
             last_step = trace[-1] if trace else {}
-            if last_step.get("status") == "succeeded":
+            if last_step.get("status") in {"succeeded", "pending"}:
                 step_id = last_step.get("step_id")
                 action_type = last_step.get("action_type")
                 if step_id == "opening_message" or action_type in {"ask_for_email", "ask_for_phone", "tag_contact"}:

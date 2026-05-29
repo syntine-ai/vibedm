@@ -92,7 +92,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                         step_entry["response"] = {"message_id": f"mock-followup-{automation_run_id}"}
                         step_entry["status"] = "succeeded"
                     else:
-                        recipient = {"comment_id": comment_id} if comment_id else {"id": sender_id}
+                        recipient = {"id": sender_id}
                         res = await client.post(
                             "https://graph.instagram.com/v25.0/me/messages",
                             params={"access_token": token},
@@ -110,7 +110,6 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                     step_entry["response"] = {"error": str(e)}
                     final_status = "failed"
                     final_error = f"Follow-up message failed: {str(e)}"
-                    step_trace.append(step_entry)
                     
                 step_trace.append(step_entry)
             
@@ -305,9 +304,14 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                 step_entry["response"] = res.json()
                                 step_entry["status"] = "succeeded"
                                 
-                        else:
                             # Stubs for ask_for_email, ask_for_phone, tag_contact / ask_follow
-                            prompt_text = config.get("prompt") or config.get("message") or f"Stub prompt for {action_type}"
+                            default_prompts = {
+                                "ask_for_email": "Please reply with your email address to continue...",
+                                "ask_for_phone": "Please reply with your phone number to continue...",
+                                "tag_contact": "To get access to the download link, please make sure you're following our account! Click follow, then reply with 'Done' to continue! 😊"
+                            }
+                            prompt_text = config.get("prompt") or config.get("message") or default_prompts.get(action_type, f"Stub prompt for {action_type}")
+                            
                             if action_type in {"ask_for_email", "ask_for_phone"}:
                                 if is_mock:
                                     step_entry["response"] = {"message_id": f"mock-prompt-{automation_run_id}"}
@@ -329,72 +333,118 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                     
                                 # Pause the sequential execution and wait for user's lead submission!
                                 final_status = "awaiting_interaction"
+                                
                             elif action_type == "tag_contact":
-                                prompt_text = config.get("message") or "To get access to the download link, please make sure you're following our account! Click follow, then reply with 'Done' to continue! 😊"
-                                if is_mock:
-                                    step_entry["response"] = {"status": "succeeded", "reason": "Follow verified successfully"}
-                                    step_entry["status"] = "succeeded"
-                                else:
-                                    recipient = {"id": sender_id}
-                                    
-                                    # Fetch workspace username to provide a premium direct follow button
-                                    username = await repo.get_workspace_username(run["workspace_id"])
-                                    
-                                    if username:
-                                        # Send a premium Generic Template (Card) with a direct "Follow Us" link button and a "Done! 👍" confirmation button
-                                        follow_url = f"https://instagram.com/{username}"
-                                        message_payload = {
-                                            "attachment": {
-                                                "type": "template",
-                                                "payload": {
-                                                    "template_type": "generic",
-                                                    "elements": [{
-                                                        "title": "Follow us to continue! 👤",
-                                                        "subtitle": prompt_text[:80],
-                                                        "buttons": [
-                                                            {
-                                                                "type": "web_url",
-                                                                "url": follow_url,
-                                                                "title": "Follow Us 👤"
-                                                            },
-                                                            {
-                                                                "type": "postback",
-                                                                "title": "Done! 👍",
-                                                                "payload": f"step_click_{step['id']}"
-                                                            }
-                                                        ]
-                                                    }]
-                                                }
+                                # Check if we already have a pending trace entry for this step
+                                existing_entry = next((s for s in step_trace if s.get("step_id") == str(step["id"])), None)
+                                
+                                # Perform Live Instagram API follow check
+                                is_following = False
+                                if not is_mock:
+                                    try:
+                                        res_follow = await client.get(
+                                            f"https://graph.instagram.com/v25.0/{sender_id}",
+                                            params={
+                                                "fields": "is_user_follow_business",
+                                                "access_token": token
                                             }
-                                        }
+                                        )
+                                        if res_follow.status_code == 200:
+                                            is_following = bool(res_follow.json().get("is_user_follow_business", False))
+                                    except Exception:
+                                        is_following = False
+                                else:
+                                    is_following = True
+                                    
+                                if existing_entry:
+                                    # Post-Check: We are resuming a paused follow-up step
+                                    if is_following:
+                                        # User has followed successfully! Mark step succeeded and advance.
+                                        existing_entry["status"] = "succeeded"
+                                        existing_entry["response"] = {"status": "verified", "reason": "Follow verified successfully via live API check"}
+                                        existing_entry["timestamp"] = datetime.now(timezone.utc).isoformat()
+                                        continue  # Let the loop proceed to the next step!
                                     else:
-                                        # Fallback to standard message with "Done! 👍" quick reply button
-                                        message_payload = {
-                                            "text": prompt_text,
-                                            "quick_replies": [
-                                                {
-                                                    "content_type": "text",
-                                                    "title": "Done! 👍",
-                                                    "payload": f"step_click_{step['id']}"
+                                        # User claimed they followed but API says they are not following.
+                                        # Send a gentle warning message asking them to follow and try again.
+                                        warning_text = "We checked, but you aren't following yet! Please make sure to follow us, then click 'Done' or reply 'Done' to continue! 😊"
+                                        if not is_mock:
+                                            recipient = {"id": sender_id}
+                                            await client.post(
+                                                "https://graph.instagram.com/v25.0/me/messages",
+                                                params={"access_token": token},
+                                                json={
+                                                    "recipient": recipient,
+                                                    "message": {"text": warning_text},
                                                 }
-                                            ]
-                                        }
-                                    
-                                    res = await client.post(
-                                        "https://graph.instagram.com/v25.0/me/messages",
-                                        params={"access_token": token},
-                                        json={
-                                            "recipient": recipient,
-                                            "message": message_payload,
-                                        }
-                                    )
-                                    if res.status_code != 200:
-                                        raise ValueError(f"Meta Follow Prompt API failed: {res.text}")
-                                    step_entry["response"] = res.json()
-                                    step_entry["status"] = "succeeded"
-                                    
-                                # Pause the sequential execution and wait for user's follow action!
-                                final_status = "awaiting_interaction"
+                                            )
+                                        # Pause sequential execution again
+                                        final_status = "awaiting_interaction"
+                                        break  # Pause and exit the steps execution loop
+                                else:
+                                    # First-time execution (Pre-Check):
+                                    if is_following:
+                                        # User is already following! Silently skip this step and advance directly.
+                                        step_entry["status"] = "succeeded"
+                                        step_entry["response"] = {"status": "skipped", "reason": "User already following (pre-check passed)"}
+                                    else:
+                                        # User is not following. Send the premium follow prompt and pause.
+                                        if is_mock:
+                                            step_entry["response"] = {"status": "pending", "reason": "Follow prompt sent (mock)"}
+                                            step_entry["status"] = "pending"
+                                        else:
+                                            recipient = {"id": sender_id}
+                                            username = await repo.get_workspace_username(run["workspace_id"])
+                                            if username:
+                                                follow_url = f"https://instagram.com/{username}"
+                                                message_payload = {
+                                                    "attachment": {
+                                                        "type": "template",
+                                                        "payload": {
+                                                            "template_type": "button",
+                                                            "text": prompt_text[:640],
+                                                            "buttons": [
+                                                                {
+                                                                    "type": "web_url",
+                                                                    "url": follow_url,
+                                                                    "title": "Follow Us 👤"
+                                                                },
+                                                                {
+                                                                    "type": "postback",
+                                                                    "title": "Done! 👍",
+                                                                    "payload": f"step_click_{step['id']}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                }
+                                            else:
+                                                message_payload = {
+                                                    "text": prompt_text,
+                                                    "quick_replies": [
+                                                        {
+                                                            "content_type": "text",
+                                                            "title": "Done! 👍",
+                                                            "payload": f"step_click_{step['id']}"
+                                                        }
+                                                    ]
+                                                }
+                                            res = await client.post(
+                                                "https://graph.instagram.com/v25.0/me/messages",
+                                                params={"access_token": token},
+                                                json={
+                                                    "recipient": recipient,
+                                                    "message": message_payload,
+                                                }
+                                            )
+                                            if res.status_code != 200:
+                                                raise ValueError(f"Meta Follow Prompt API failed: {res.text}")
+                                            step_entry["response"] = res.json()
+                                            step_entry["status"] = "pending"
+                                            
+                                        final_status = "awaiting_interaction"
+                                        step_trace.append(step_entry)
+                                        break
                             else:
                                 step_entry["response"] = {"status": "skipped", "reason": "No-op stub"}
                                 step_entry["status"] = "succeeded"
@@ -421,8 +471,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
             error=final_error,
         )
         
-        # 8. Schedule deferred Follow-up Sequence (if initial run succeeded and follow-up is enabled)
-        if final_status == "succeeded" and trigger_config.get("follow_up_enabled"):
+        if final_status in {"succeeded", "awaiting_interaction"} and trigger_config.get("follow_up_enabled"):
             try:
                 initial_payload = run.get("payload") or {}
                 if not initial_payload.get("is_followup"):

@@ -52,7 +52,14 @@ class WebhookService:
         messagings = entry.get("messaging", [{}])
         if messagings and "message" in messagings[0]:
             external_id = messagings[0]["message"].get("mid") or "unknown"
-        # 2. Try to get comment ID
+        # 2. Try to get postback click unique ID
+        elif messagings and "postback" in messagings[0]:
+            pb = messagings[0]["postback"]
+            sender_id = messagings[0].get("sender", {}).get("id") or "unknown"
+            payload_str = pb.get("payload") or ""
+            timestamp = messagings[0].get("timestamp") or entry.get("time") or ""
+            external_id = f"postback_{sender_id}_{payload_str}_{timestamp}"
+        # 3. Try to get comment ID
         elif entry.get("changes"):
             change_val = entry["changes"][0].get("value", {})
             external_id = change_val.get("id") or "unknown"
