@@ -283,6 +283,40 @@ class AutomationRepository:
             return None
         return row["ig_username"]
 
+    async def has_pending_followup_run(
+        self,
+        workspace_id: UUID,
+        automation_id: UUID,
+        contact_id: UUID | None,
+    ) -> bool:
+        """Return True if a follow-up run already exists for this contact+automation
+        within the last 24 hours, preventing duplicate follow-up scheduling when a
+        run is resumed and re-executes the follow-up guard."""
+        if not contact_id:
+            return False
+        result = await self.session.execute(
+            text(
+                """
+                select exists(
+                    select 1
+                    from public.automation_runs
+                    where workspace_id = :workspace_id
+                      and automation_id = :automation_id
+                      and contact_id = :contact_id
+                      and (trigger_event->>'is_followup')::boolean = true
+                      and created_at > now() - interval '24 hours'
+                ) as has_followup
+                """
+            ),
+            {
+                "workspace_id": workspace_id,
+                "automation_id": automation_id,
+                "contact_id": contact_id,
+            },
+        )
+        row = result.mappings().first()
+        return bool(row["has_followup"]) if row else False
+
     async def update_run(
         self,
         run_id: UUID,

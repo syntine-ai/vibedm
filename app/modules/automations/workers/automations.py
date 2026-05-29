@@ -476,36 +476,48 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
             try:
                 # Guard: never schedule another follow-up from a follow-up run.
                 # is_followup is stored in trigger_event, NOT in run["payload"] which doesn't exist.
+                # Also guard against resumed runs re-scheduling a follow-up that was already created.
                 if not trigger_event.get("is_followup"):
-                    from datetime import timedelta
-                    from app.core.jobs import PostgresJobQueue, JobCreate
-                    
-                    delay_mins = trigger_config.get("follow_up_delay") or 10
-                    run_at = datetime.now(timezone.utc) + timedelta(minutes=delay_mins)
-                    
-                    follow_up_run_id = await repo.create_automation_run(
+                    already_has_followup = await repo.has_pending_followup_run(
                         workspace_id=run["workspace_id"],
                         automation_id=run["automation_id"],
                         contact_id=run.get("contact_id"),
-                        trigger_event={
-                            **(run.get("trigger_event") or {}),
-                            "comment_id": comment_id,
-                            "is_followup": True
-                        }
                     )
-                    
-                    queue = PostgresJobQueue(session)
-                    await queue.enqueue(
-                        JobCreate(
-                            job_type="automation.run",
-                            workspace_id=run["workspace_id"],
-                            payload={
-                                "automation_run_id": str(follow_up_run_id),
-                                "is_followup": True
-                            },
-                            run_at=run_at
+                    if already_has_followup:
+                        import logging
+                        logging.getLogger("app.worker").info(
+                            f"⏭ Skipping follow-up scheduling — run already exists for contact {run.get('contact_id')}"
                         )
-                    )
+                    else:
+                        from datetime import timedelta
+                        from app.core.jobs import PostgresJobQueue, JobCreate
+                        
+                        delay_mins = trigger_config.get("follow_up_delay") or 10
+                        run_at = datetime.now(timezone.utc) + timedelta(minutes=delay_mins)
+                        
+                        follow_up_run_id = await repo.create_automation_run(
+                            workspace_id=run["workspace_id"],
+                            automation_id=run["automation_id"],
+                            contact_id=run.get("contact_id"),
+                            trigger_event={
+                                **(run.get("trigger_event") or {}),
+                                "comment_id": comment_id,
+                                "is_followup": True
+                            }
+                        )
+                        
+                        queue = PostgresJobQueue(session)
+                        await queue.enqueue(
+                            JobCreate(
+                                job_type="automation.run",
+                                workspace_id=run["workspace_id"],
+                                payload={
+                                    "automation_run_id": str(follow_up_run_id),
+                                    "is_followup": True
+                                },
+                                run_at=run_at
+                            )
+                        )
             except Exception as sched_err:
                 import logging
                 logging.getLogger("app.worker").error(f"❌ Failed to schedule follow-up job: {sched_err}")
