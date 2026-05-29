@@ -50,7 +50,10 @@ class PostgresJobQueue:
 
     async def enqueue(self, job: JobCreate) -> JobRecord:
         import json
-        job_data = job.model_dump(mode="json")
+        # Use plain model_dump() (NOT mode="json") so that datetime fields like
+        # run_at stay as datetime objects — asyncpg requires actual datetime instances,
+        # not ISO strings. Only the payload dict needs manual JSON serialization.
+        job_data = job.model_dump()
         if isinstance(job_data.get("payload"), dict):
             job_data["payload"] = json.dumps(job_data["payload"])
 
