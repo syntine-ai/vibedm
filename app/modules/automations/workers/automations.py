@@ -304,6 +304,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                 step_entry["response"] = res.json()
                                 step_entry["status"] = "succeeded"
                                 
+                        else:
                             # Stubs for ask_for_email, ask_for_phone, tag_contact / ask_follow
                             default_prompts = {
                                 "ask_for_email": "Please reply with your email address to continue...",

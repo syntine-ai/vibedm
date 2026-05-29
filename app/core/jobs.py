@@ -49,6 +49,11 @@ class PostgresJobQueue:
         self.session = session
 
     async def enqueue(self, job: JobCreate) -> JobRecord:
+        import json
+        job_data = job.model_dump(mode="json")
+        if isinstance(job_data.get("payload"), dict):
+            job_data["payload"] = json.dumps(job_data["payload"])
+
         result = await self.session.execute(
             text(
                 """
@@ -62,7 +67,7 @@ class PostgresJobQueue:
                           last_error, created_at, updated_at, completed_at
                 """
             ),
-            job.model_dump(mode="json"),
+            job_data,
         )
         await self.session.commit()
         return JobRecord(**dict(result.mappings().one()))
