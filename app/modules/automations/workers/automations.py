@@ -474,8 +474,9 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
         
         if final_status in {"succeeded", "awaiting_interaction"} and trigger_config.get("follow_up_enabled"):
             try:
-                initial_payload = run.get("payload") or {}
-                if not initial_payload.get("is_followup"):
+                # Guard: never schedule another follow-up from a follow-up run.
+                # is_followup is stored in trigger_event, NOT in run["payload"] which doesn't exist.
+                if not trigger_event.get("is_followup"):
                     from datetime import timedelta
                     from app.core.jobs import PostgresJobQueue, JobCreate
                     
