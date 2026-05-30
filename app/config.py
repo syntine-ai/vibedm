@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     instagram_webhook_secret: str = ""
     instagram_verify_token: str = "dev-instagram-verify-token"
     instagram_config_id: str = ""
+    meta_app_id: str = ""
+    meta_app_secret: str = ""
 
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""

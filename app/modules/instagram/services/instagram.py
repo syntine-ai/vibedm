@@ -47,13 +47,15 @@ class InstagramOAuthProvider:
 
         # 1. Configuration-based flow (Facebook Login for Business)
         if self.settings.instagram_config_id and self.settings.instagram_config_id != "dev":
+            client_id = self.settings.meta_app_id or self.settings.instagram_app_id
+            client_secret = self.settings.meta_app_secret or self.settings.instagram_app_secret
             async with httpx.AsyncClient(timeout=15.0) as client:
                 # Step 1: Exchange code for facebook user access token
                 token_res = await client.get(
                     "https://graph.facebook.com/v25.0/oauth/access_token",
                     params={
-                        "client_id": self.settings.instagram_app_id,
-                        "client_secret": self.settings.instagram_app_secret,
+                        "client_id": client_id,
+                        "client_secret": client_secret,
                         "redirect_uri": self.settings.instagram_redirect_uri,
                         "code": code,
                     },
@@ -221,9 +223,10 @@ class InstagramService:
         
         # If config_id is provided, utilize Meta's modern Facebook Login for Business dialog
         if self.settings.instagram_config_id and self.settings.instagram_config_id != "dev":
+            client_id = self.settings.meta_app_id or self.settings.instagram_app_id
             params = urlencode(
                 {
-                    "client_id": self.settings.instagram_app_id,
+                    "client_id": client_id,
                     "redirect_uri": self.settings.instagram_redirect_uri,
                     "config_id": self.settings.instagram_config_id,
                     "state": state,
