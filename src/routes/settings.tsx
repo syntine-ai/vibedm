@@ -170,13 +170,14 @@ export function InstagramTab() {
       <ConnectInstagramDialog
         open={connectDialogOpen}
         onOpenChange={setConnectDialogOpen}
-        intent="add_workspace"
+        intent={activeWorkspace?.id ? "add_workspace" : "onboarding"}
       />
     </div>
   );
 }
 
 export function WorkspacesTab() {
+  const { activeWorkspace } = useActiveWorkspace();
   const workspacesQuery = useWorkspacesQuery();
   const activateMutation = useActivateWorkspaceMutation();
   const updateMutation = useUpdateWorkspaceMutation();
@@ -238,7 +239,7 @@ export function WorkspacesTab() {
       <ConnectInstagramDialog
         open={connectDialogOpen}
         onOpenChange={setConnectDialogOpen}
-        intent="add_workspace"
+        intent={activeWorkspace?.id ? "add_workspace" : "onboarding"}
       />
     </>
   );
