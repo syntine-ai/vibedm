@@ -359,6 +359,7 @@ class InstagramService:
             }
 
         # Fetch from Instagram Graph API
+        api_domain = "graph.facebook.com" if token and token.startswith("EAA") else "graph.instagram.com"
         async with httpx.AsyncClient(timeout=15.0) as client:
             params = {
                 "fields": "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp",
@@ -369,7 +370,7 @@ class InstagramService:
                 params["after"] = after
 
             res = await client.get(
-                f"https://graph.instagram.com/v25.0/{ig_user_id}/media",
+                f"https://{api_domain}/v25.0/{ig_user_id}/media",
                 params=params
             )
             if res.status_code != 200:

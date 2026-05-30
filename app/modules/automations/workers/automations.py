@@ -36,6 +36,10 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
         token = await repo.get_workspace_token(run["workspace_id"])
         is_mock = not token or token.startswith("dev-token") or token == "dev"
         
+        # Determine whether to use graph.facebook.com or graph.instagram.com based on token type
+        # Facebook tokens (Page access tokens) start with EAA...
+        api_domain = "graph.facebook.com" if token and token.startswith("EAA") else "graph.instagram.com"
+        
         # 4. Extract sender ID and comment ID (if present) from trigger event
         trigger_event = run["trigger_event"] or {}
         
@@ -94,7 +98,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                     else:
                         recipient = {"id": sender_id}
                         res = await client.post(
-                            "https://graph.instagram.com/v25.0/me/messages",
+                            f"https://{api_domain}/v25.0/me/messages",
                             params={"access_token": token},
                             json={
                                 "recipient": recipient,
@@ -146,7 +150,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                     else:
                         recipient = {"comment_id": comment_id} if comment_id else {"id": sender_id}
                         res = await client.post(
-                            "https://graph.instagram.com/v25.0/me/messages",
+                            f"https://{api_domain}/v25.0/me/messages",
                             params={"access_token": token},
                             json={
                                 "recipient": recipient,
@@ -273,7 +277,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                             else:
                                 recipient = {"id": sender_id}
                                 res = await client.post(
-                                    "https://graph.instagram.com/v25.0/me/messages",
+                                    f"https://{api_domain}/v25.0/me/messages",
                                     params={"access_token": token},
                                     json={
                                         "recipient": recipient,
@@ -295,7 +299,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                 step_entry["status"] = "succeeded"
                             else:
                                 res = await client.post(
-                                    f"https://graph.instagram.com/v25.0/{comment_id}/replies",
+                                    f"https://{api_domain}/v25.0/{comment_id}/replies",
                                     params={"access_token": token},
                                     json={"message": reply_text}
                                 )
@@ -320,7 +324,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                 else:
                                     recipient = {"id": sender_id}
                                     res = await client.post(
-                                        "https://graph.instagram.com/v25.0/me/messages",
+                                        f"https://{api_domain}/v25.0/me/messages",
                                         params={"access_token": token},
                                         json={
                                             "recipient": recipient,
@@ -344,7 +348,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                 if not is_mock:
                                     try:
                                         res_follow = await client.get(
-                                            f"https://graph.instagram.com/v25.0/{sender_id}",
+                                            f"https://{api_domain}/v25.0/{sender_id}",
                                             params={
                                                 "fields": "is_user_follow_business",
                                                 "access_token": token
@@ -372,7 +376,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                         if not is_mock:
                                             recipient = {"id": sender_id}
                                             await client.post(
-                                                "https://graph.instagram.com/v25.0/me/messages",
+                                                f"https://{api_domain}/v25.0/me/messages",
                                                 params={"access_token": token},
                                                 json={
                                                     "recipient": recipient,
@@ -431,7 +435,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                                     ]
                                                 }
                                             res = await client.post(
-                                                "https://graph.instagram.com/v25.0/me/messages",
+                                                f"https://{api_domain}/v25.0/me/messages",
                                                 params={"access_token": token},
                                                 json={
                                                     "recipient": recipient,
