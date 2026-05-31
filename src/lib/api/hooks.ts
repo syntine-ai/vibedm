@@ -109,10 +109,10 @@ export function useLogoutMutation(onLoggedOut: () => void) {
   });
 }
 
-export function useStartInstagramOauth(intent: "onboarding" | "add_workspace") {
+export function useStartInstagramOauth(intent: "onboarding" | "add_workspace", flow?: string) {
   return useMutation({
     mutationFn: async () => {
-      const response = await instagramApi.startOauth();
+      const response = await instagramApi.startOauth(flow);
       localStorage.setItem("vibedm.instagram_intent", intent);
 
       // Open Meta OAuth in a centered popup instead of redirecting the whole page
