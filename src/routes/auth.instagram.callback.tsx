@@ -53,7 +53,7 @@ function InstagramCallbackPage() {
   const triggerOAuthCompletion = (code: string, state: string, intent: string, selectedIgUserId?: string) => {
     const complete =
       intent === "add_workspace"
-        ? (body: { code: string; state: string; ig_user_id?: string }) => {
+        ? (body: { code: string; state: string; ig_user_id?: string; redirect_uri?: string }) => {
             if (!activeWorkspace?.id && intent === "add_workspace") {
               setError("Select a workspace before continuing.");
               return Promise.reject(new Error("Select a workspace before continuing."));
@@ -65,7 +65,8 @@ function InstagramCallbackPage() {
     setIsCompleting(true);
     setError(null);
 
-    complete({ code, state, ig_user_id: selectedIgUserId })
+    const redirectUri = window.location.origin + window.location.pathname;
+    complete({ code, state, ig_user_id: selectedIgUserId, redirect_uri: redirectUri })
       .then(async (response) => {
         localStorage.removeItem("vibedm.instagram_intent");
         const me = await authApi.me();

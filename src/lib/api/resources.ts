@@ -103,12 +103,12 @@ export const workspaceApi = {
 
 export const instagramApi = {
   startOauth: (flow?: string) => api.request<OAuthStart>("/api/v1/instagram/oauth/start", { query: flow ? { flow } : undefined }),
-  completeOauth: (body: { code: string; state: string; ig_user_id?: string }) =>
+  completeOauth: (body: { code: string; state: string; ig_user_id?: string; redirect_uri?: string }) =>
     api.request<InstagramWorkspaceResponse>("/api/v1/instagram/oauth/callback", {
       method: "POST",
       body,
     }),
-  connectWorkspace: (body: { code: string; state: string; ig_user_id?: string }, workspaceId?: string) =>
+  connectWorkspace: (body: { code: string; state: string; ig_user_id?: string; redirect_uri?: string }, workspaceId?: string) =>
     api.request<InstagramWorkspaceResponse>("/api/v1/workspaces/connect-instagram", {
       method: "POST",
       body,
