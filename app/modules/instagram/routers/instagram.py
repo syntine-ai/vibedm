@@ -33,8 +33,9 @@ def get_instagram_service(
 async def start_oauth(
     user: Annotated[CurrentUser, Depends(get_current_user)],
     service: Annotated[InstagramService, Depends(get_instagram_service)],
+    flow: str | None = None,
 ) -> OAuthStartResponse:
-    return await service.start_oauth(user)
+    return await service.start_oauth(user, flow=flow)
 
 
 @instagram_router.post("/oauth/callback", response_model=InstagramWorkspaceResponse)
@@ -43,7 +44,7 @@ async def oauth_callback(
     user: Annotated[CurrentUser, Depends(get_current_user)],
     service: Annotated[InstagramService, Depends(get_instagram_service)],
 ) -> InstagramWorkspaceResponse:
-    return await service.complete_oauth(user, request.code, request.state)
+    return await service.complete_oauth(user, request.code, request.state, ig_user_id=request.ig_user_id)
 
 
 @workspace_router.post("/connect-instagram", response_model=InstagramWorkspaceResponse)
@@ -59,7 +60,9 @@ async def connect_instagram_from_workspace(
             workspace_id = UUID(x_workspace_id)
         except ValueError:
             pass
-    return await service.complete_oauth(user, request.code, request.state, workspace_id=workspace_id)
+    return await service.complete_oauth(
+        user, request.code, request.state, workspace_id=workspace_id, ig_user_id=request.ig_user_id
+    )
 
 
 @instagram_router.delete("/connection")

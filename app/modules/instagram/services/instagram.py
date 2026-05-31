@@ -30,7 +30,7 @@ class InstagramOAuthProvider:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
 
-    async def exchange_code(self, code: str) -> InstagramProfile:
+    async def exchange_code(self, code: str, ig_user_id: str | None = None) -> InstagramProfile:
         if (
             not self.settings.instagram_app_id
             or self.settings.instagram_app_id == "dev"
@@ -91,17 +91,18 @@ class InstagramOAuthProvider:
                     )
                 accounts_data = accounts_res.json().get("data", [])
                 
-                # Identify the Page with a linked Instagram Business Account
-                page_token = None
-                ig_user_id = None
+                # Identify all Pages with linked Instagram Business Accounts
+                valid_accounts = []
                 for page in accounts_data:
                     ig_account = page.get("instagram_business_account")
                     if ig_account and ig_account.get("id"):
-                        ig_user_id = str(ig_account["id"])
-                        page_token = page.get("access_token")
-                        break
+                        valid_accounts.append({
+                            "ig_user_id": str(ig_account["id"]),
+                            "page_token": page.get("access_token"),
+                            "ig_username": page.get("name") or "instagram_business"
+                        })
 
-                if not ig_user_id or not page_token:
+                if not valid_accounts:
                     raise ApiError(
                         status_code=400,
                         code="ig_onboarding_failed",
@@ -111,22 +112,54 @@ class InstagramOAuthProvider:
                         ),
                     )
 
-                # Step 3: Fetch the Instagram Business account profile details
-                profile_res = await client.get(
-                    f"https://graph.facebook.com/v25.0/{ig_user_id}",
-                    params={
-                        "fields": "id,username,name",
-                        "access_token": page_token,
-                    },
-                )
-                if profile_res.status_code != 200:
-                    raise ApiError(
-                        status_code=400,
-                        code="ig_oauth_failed",
-                        message=f"Failed to fetch Instagram profile details: {profile_res.text}",
-                    )
-                profile_data = profile_res.json()
-                ig_username = profile_data.get("username") or profile_data.get("name", "ig_user")
+                # Resolve Instagram usernames for each detected account
+                for acc in valid_accounts:
+                    try:
+                        profile_res = await client.get(
+                            f"https://graph.facebook.com/v25.0/{acc['ig_user_id']}",
+                            params={
+                                "fields": "id,username,name",
+                                "access_token": acc["page_token"],
+                            },
+                        )
+                        if profile_res.status_code == 200:
+                            p_data = profile_res.json()
+                            acc["ig_username"] = p_data.get("username") or p_data.get("name") or acc["ig_username"]
+                    except Exception:
+                        pass
+
+                # Handle multi-account selection logic
+                selected_account = None
+                if ig_user_id:
+                    # Find the specific account the user selected
+                    selected_account = next((a for a in valid_accounts if a["ig_user_id"] == ig_user_id), None)
+                    if not selected_account:
+                        raise ApiError(
+                            status_code=400,
+                            code="invalid_selection",
+                            message="The selected Instagram account was not found among your authorized Facebook Pages.",
+                        )
+                else:
+                    # If no selection is made yet:
+                    if len(valid_accounts) == 1:
+                        selected_account = valid_accounts[0]
+                    else:
+                        # Multiple accounts found! Raise selection required error
+                        serialized_accounts = [
+                            {"ig_user_id": a["ig_user_id"], "ig_username": a["ig_username"]}
+                            for a in valid_accounts
+                        ]
+                        raise ApiError(
+                            status_code=400,
+                            code="requires_selection",
+                            message="Multiple Instagram accounts found. Selection required.",
+                            details={"accounts": serialized_accounts}
+                        )
+
+                # Fetch full profile details for the selected account
+                ig_user_id = selected_account["ig_user_id"]
+                page_token = selected_account["page_token"]
+                ig_username = selected_account["ig_username"]
 
                 return InstagramProfile(
                     ig_user_id=ig_user_id,
@@ -218,11 +251,21 @@ class InstagramService:
         self.settings = settings
         self.provider = provider or InstagramOAuthProvider(settings)
 
-    async def start_oauth(self, user: CurrentUser) -> OAuthStartResponse:
-        state = sign_state({"user_id": str(user.id)}, self.settings.instagram_app_secret or "dev")
+    async def start_oauth(self, user: CurrentUser, flow: str | None = None) -> OAuthStartResponse:
+        active_secret = (
+            self.settings.meta_app_secret 
+            if (self.settings.instagram_config_id and self.settings.instagram_config_id != "dev" and flow != "legacy")
+            else self.settings.instagram_app_secret
+        ) or "dev"
+        connection_type = (
+            "facebook_business"
+            if (self.settings.instagram_config_id and self.settings.instagram_config_id != "dev" and flow != "legacy")
+            else "instagram_direct"
+        )
+        state = sign_state({"user_id": str(user.id), "connection_type": connection_type}, active_secret)
         
         # If config_id is provided, utilize Meta's modern Facebook Login for Business dialog
-        if self.settings.instagram_config_id and self.settings.instagram_config_id != "dev":
+        if self.settings.instagram_config_id and self.settings.instagram_config_id != "dev" and flow != "legacy":
             client_id = self.settings.meta_app_id or self.settings.instagram_app_id
             params = urlencode(
                 {
@@ -252,15 +295,30 @@ class InstagramService:
         return OAuthStartResponse(url=oauth_url, state=state)
 
     async def complete_oauth(
-        self, user: CurrentUser, code: str, state: str, workspace_id: UUID | None = None
+        self, user: CurrentUser, code: str, state: str, workspace_id: UUID | None = None, ig_user_id: str | None = None
     ) -> InstagramWorkspaceResponse:
-        payload = verify_state(state, self.settings.instagram_app_secret or "dev")
+        payload = None
+        for secret in [self.settings.meta_app_secret, self.settings.instagram_app_secret, "dev"]:
+            if not secret:
+                continue
+            try:
+                payload = verify_state(state, secret)
+                break
+            except Exception:
+                continue
+        
+        if not payload:
+            raise ApiError(
+                status_code=400, code="invalid_state", message="OAuth state signature verification failed"
+            )
+
         if payload.get("user_id") != str(user.id):
             raise ApiError(
                 status_code=400, code="invalid_state", message="OAuth state user mismatch"
             )
 
-        profile = await self.provider.exchange_code(code)
+        connection_type = payload.get("connection_type", "instagram_direct")
+        profile = await self.provider.exchange_code(code, ig_user_id=ig_user_id)
 
         if workspace_id is not None:
             workspace_detail = await self.repository.get_workspace_detail(workspace_id)
@@ -281,11 +339,13 @@ class InstagramService:
                 ig_username=profile.ig_username,
                 access_token=profile.access_token,
                 scopes=profile.scopes,
+                connection_type=connection_type,
             )
 
             workspace = workspace_detail | {
                 "ig_username": profile.ig_username,
                 "ig_user_id": profile.ig_user_id,
+                "connection_type": connection_type,
                 "plan": "free",
                 "active": True,
             }
@@ -299,6 +359,7 @@ class InstagramService:
                 access_token=profile.access_token,
                 scopes=profile.scopes,
                 ig_username=profile.ig_username,
+                connection_type=connection_type,
             )
             workspace_detail = await self.repository.get_workspace_detail(existing["workspace_id"])
             if workspace_detail is None:
@@ -310,6 +371,7 @@ class InstagramService:
             workspace = workspace_detail | {
                 "ig_username": profile.ig_username,
                 "ig_user_id": profile.ig_user_id,
+                "connection_type": connection_type,
                 "plan": "free",
                 "active": True,
             }
@@ -322,6 +384,7 @@ class InstagramService:
             ig_username=profile.ig_username,
             access_token=profile.access_token,
             scopes=profile.scopes,
+            connection_type=connection_type,
         )
         return InstagramWorkspaceResponse(workspace=workspace)
 

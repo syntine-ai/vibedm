@@ -14,6 +14,7 @@ class OAuthStartResponse(BaseModel):
 class OAuthCallbackRequest(BaseModel):
     code: str
     state: str
+    ig_user_id: str | None = None
 
 
 class InstagramProfile(BaseModel):

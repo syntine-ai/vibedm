@@ -33,6 +33,7 @@ class InstagramRepository:
         ig_username: str,
         access_token: str,
         scopes: list[str],
+        connection_type: str = "instagram_direct",
     ) -> dict:
         workspace_result = await self.session.execute(
             text(
@@ -49,9 +50,9 @@ class InstagramRepository:
             text(
                 """
                 insert into public.instagram_connections
-                  (workspace_id, ig_user_id, ig_username, access_token_enc, scopes)
+                  (workspace_id, ig_user_id, ig_username, access_token_enc, scopes, connection_type)
                 values
-                  (:workspace_id, :ig_user_id, :ig_username, :access_token_enc, :scopes)
+                  (:workspace_id, :ig_user_id, :ig_username, :access_token_enc, :scopes, :connection_type)
                 """
             ),
             {
@@ -60,12 +61,14 @@ class InstagramRepository:
                 "ig_username": ig_username,
                 "access_token_enc": access_token.encode("utf-8"),
                 "scopes": scopes,
+                "connection_type": connection_type,
             },
         )
         await self.session.commit()
         return workspace | {
             "ig_username": ig_username,
             "ig_user_id": ig_user_id,
+            "connection_type": connection_type,
             "plan": "free",
             "active": True,
         }
@@ -84,6 +87,7 @@ class InstagramRepository:
         access_token: str,
         scopes: list[str],
         ig_username: str | None = None,
+        connection_type: str | None = None,
     ) -> None:
         await self.session.execute(
             text(
@@ -92,6 +96,7 @@ class InstagramRepository:
                 set access_token_enc = :access_token_enc,
                     scopes = :scopes,
                     ig_username = coalesce(:ig_username, ig_username),
+                    connection_type = coalesce(:connection_type, connection_type),
                     updated_at = now()
                 where workspace_id = :workspace_id
                 """
@@ -101,6 +106,7 @@ class InstagramRepository:
                 "access_token_enc": access_token.encode("utf-8"),
                 "scopes": scopes,
                 "ig_username": ig_username,
+                "connection_type": connection_type,
             },
         )
         await self.session.commit()
@@ -134,14 +140,15 @@ class InstagramRepository:
         ig_username: str,
         access_token: str,
         scopes: list[str],
+        connection_type: str = "instagram_direct",
     ) -> None:
         await self.session.execute(
             text(
                 """
                 insert into public.instagram_connections
-                  (workspace_id, ig_user_id, ig_username, access_token_enc, scopes)
+                  (workspace_id, ig_user_id, ig_username, access_token_enc, scopes, connection_type)
                 values
-                  (:workspace_id, :ig_user_id, :ig_username, :access_token_enc, :scopes)
+                  (:workspace_id, :ig_user_id, :ig_username, :access_token_enc, :scopes, :connection_type)
                 """
             ),
             {
@@ -150,6 +157,7 @@ class InstagramRepository:
                 "ig_username": ig_username,
                 "access_token_enc": access_token.encode("utf-8"),
                 "scopes": scopes,
+                "connection_type": connection_type,
             },
         )
         await self.session.commit()
@@ -158,7 +166,7 @@ class InstagramRepository:
         result = await self.session.execute(
             text(
                 """
-                select workspace_id, ig_user_id, ig_username, access_token_enc, scopes
+                select workspace_id, ig_user_id, ig_username, access_token_enc, scopes, connection_type
                 from public.instagram_connections
                 where workspace_id = :workspace_id
                 """

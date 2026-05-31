@@ -29,7 +29,7 @@ class FakeInstagramRepository:
         return None
 
     async def create_workspace_with_connection(
-        self, owner_id, name, ig_user_id, ig_username, access_token, scopes
+        self, owner_id, name, ig_user_id, ig_username, access_token, scopes, connection_type="instagram_direct"
     ) -> dict:
         self.workspace = {
             "id": UUID("11111111-1111-1111-1111-111111111111"),
@@ -43,28 +43,33 @@ class FakeInstagramRepository:
             "ig_username": ig_username,
             "access_token": access_token,
             "scopes": scopes,
+            "connection_type": connection_type,
         }
         return self.workspace | {
             "ig_username": ig_username,
             "ig_user_id": ig_user_id,
+            "connection_type": connection_type,
             "plan": "free",
             "active": True,
         }
 
     async def update_connection(
-        self, workspace_id: UUID, access_token: str, scopes: list[str], ig_username: str | None = None
+        self, workspace_id: UUID, access_token: str, scopes: list[str], ig_username: str | None = None, connection_type: str | None = None
     ) -> None:
         self.updated_calls.append({
             "workspace_id": workspace_id,
             "access_token": access_token,
             "scopes": scopes,
             "ig_username": ig_username,
+            "connection_type": connection_type,
         })
         if self.connection and self.connection["workspace_id"] == workspace_id:
             self.connection["access_token"] = access_token
             self.connection["scopes"] = scopes
             if ig_username:
                 self.connection["ig_username"] = ig_username
+            if connection_type:
+                self.connection["connection_type"] = connection_type
 
     async def get_workspace_detail(self, workspace_id: UUID) -> dict | None:
         if self.workspace and self.workspace["id"] == workspace_id:
@@ -80,7 +85,7 @@ class FakeInstagramRepository:
             self.connection = None
 
     async def create_connection_for_workspace(
-        self, workspace_id: UUID, ig_user_id: str, ig_username: str, access_token: str, scopes: list[str]
+        self, workspace_id: UUID, ig_user_id: str, ig_username: str, access_token: str, scopes: list[str], connection_type="instagram_direct"
     ) -> None:
         self.connection = {
             "workspace_id": workspace_id,
@@ -88,6 +93,7 @@ class FakeInstagramRepository:
             "ig_username": ig_username,
             "access_token": access_token,
             "scopes": scopes,
+            "connection_type": connection_type,
         }
 
 
@@ -327,5 +333,53 @@ async def test_exchange_code_facebook_login_for_business_success(mock_get) -> No
     assert profile.ig_username == "thevijaymarathi"
     assert profile.access_token == "fb-page-access-token"
     assert "custom_scope" in profile.scopes
+
+
+async def test_complete_oauth_stores_connection_type() -> None:
+    settings = Settings(
+        instagram_app_id="my-app-id",
+        instagram_app_secret="my-app-secret",
+        instagram_redirect_uri="http://localhost/callback",
+        instagram_config_id="3859738497654753",
+    )
+    repo = FakeInstagramRepository()
+    service = InstagramService(repository=repo, settings=settings)
+    user = CurrentUser(id="22222222-2222-2222-2222-222222222222", email="user@test.com", claims={})
+
+    # Test facebook_business connection type
+    state_business = sign_state(
+        {"user_id": str(user.id), "connection_type": "facebook_business"}, 
+        settings.instagram_app_secret or "dev"
+    )
+    fake_profile = InstagramProfile(
+        ig_user_id="ig-12345",
+        ig_username="business.user",
+        access_token="token-abc",
+        scopes=["scope1"],
+    )
+    service.provider.exchange_code = AsyncMock(return_value=fake_profile)
+
+    res = await service.complete_oauth(user=user, code="auth-code-123", state=state_business)
+    assert res.workspace["connection_type"] == "facebook_business"
+    assert repo.connection["connection_type"] == "facebook_business"
+
+    # Test instagram_direct connection type
+    state_direct = sign_state(
+        {"user_id": str(user.id), "connection_type": "instagram_direct"}, 
+        settings.instagram_app_secret or "dev"
+    )
+    res_direct = await service.complete_oauth(user=user, code="auth-code-456", state=state_direct)
+    assert res_direct.workspace["connection_type"] == "instagram_direct"
+    assert repo.connection["connection_type"] == "instagram_direct"
+
+    # Test backward compatibility (no connection_type in state defaults to instagram_direct)
+    state_legacy = sign_state(
+        {"user_id": str(user.id)}, 
+        settings.instagram_app_secret or "dev"
+    )
+    res_legacy = await service.complete_oauth(user=user, code="auth-code-789", state=state_legacy)
+    assert res_legacy.workspace["connection_type"] == "instagram_direct"
+    assert repo.connection["connection_type"] == "instagram_direct"
+
 
 

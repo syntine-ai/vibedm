@@ -20,5 +20,6 @@ class InstagramConnection(Base):
     access_token_enc: Mapped[bytes] = mapped_column(LargeBinary)
     token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     scopes: Mapped[list[str]] = mapped_column(ARRAY(Text))
+    connection_type: Mapped[str] = mapped_column(Text, default="instagram_direct", server_default="instagram_direct")
     connected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
