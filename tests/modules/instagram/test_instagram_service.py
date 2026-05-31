@@ -382,4 +382,38 @@ async def test_complete_oauth_stores_connection_type() -> None:
     assert repo.connection["connection_type"] == "instagram_direct"
 
 
+@patch("httpx.AsyncClient.get")
+async def test_exchange_code_uses_custom_redirect_uri(mock_get) -> None:
+    settings = Settings(
+        instagram_app_id="real-id",
+        instagram_app_secret="real-secret",
+        instagram_redirect_uri="http://localhost/callback",
+        instagram_config_id="3859738497654753",
+    )
+    provider = InstagramOAuthProvider(settings)
+
+    mock_get.side_effect = [
+        Response(200, json={"access_token": "fb-user-access-token", "scopes": ["custom_scope"]}),
+        Response(200, json={
+            "data": [
+                {
+                    "name": "My Business Page",
+                    "access_token": "fb-page-access-token",
+                    "id": "page-id-999",
+                    "instagram_business_account": {"id": "ig-business-888"}
+                }
+            ]
+        }),
+        Response(200, json={"id": "ig-business-888", "username": "thevijaymarathi", "name": "Vijay Marathi"}),
+    ]
+
+    custom_uri = "https://custom-domain.com/callback"
+    await provider.exchange_code("fb-code-123", redirect_uri=custom_uri)
+    
+    # Assert first call (to exchange token) used the custom URI
+    args, kwargs = mock_get.call_args_list[0]
+    assert kwargs["params"]["redirect_uri"] == custom_uri
+
+
+
 

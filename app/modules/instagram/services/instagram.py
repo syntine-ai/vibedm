@@ -30,7 +30,7 @@ class InstagramOAuthProvider:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
 
-    async def exchange_code(self, code: str, ig_user_id: str | None = None) -> InstagramProfile:
+    async def exchange_code(self, code: str, ig_user_id: str | None = None, redirect_uri: str | None = None) -> InstagramProfile:
         if (
             not self.settings.instagram_app_id
             or self.settings.instagram_app_id == "dev"
@@ -49,6 +49,7 @@ class InstagramOAuthProvider:
         if self.settings.instagram_config_id and self.settings.instagram_config_id != "dev":
             client_id = self.settings.meta_app_id or self.settings.instagram_app_id
             client_secret = self.settings.meta_app_secret or self.settings.instagram_app_secret
+            exchange_redirect_uri = redirect_uri or self.settings.instagram_redirect_uri
             async with httpx.AsyncClient(timeout=15.0) as client:
                 # Step 1: Exchange code for facebook user access token
                 token_res = await client.get(
@@ -56,7 +57,7 @@ class InstagramOAuthProvider:
                     params={
                         "client_id": client_id,
                         "client_secret": client_secret,
-                        "redirect_uri": self.settings.instagram_redirect_uri,
+                        "redirect_uri": exchange_redirect_uri,
                         "code": code,
                     },
                 )
@@ -169,6 +170,7 @@ class InstagramOAuthProvider:
                 )
 
         # 2. Legacy direct Instagram Login flow
+        exchange_redirect_uri = redirect_uri or self.settings.instagram_redirect_uri
         async with httpx.AsyncClient(timeout=15.0) as client:
             # Step 1: Exchange code for short-lived token via Instagram Business Login
             token_res = await client.post(
@@ -177,7 +179,7 @@ class InstagramOAuthProvider:
                     "client_id": self.settings.instagram_app_id,
                     "client_secret": self.settings.instagram_app_secret,
                     "grant_type": "authorization_code",
-                    "redirect_uri": self.settings.instagram_redirect_uri,
+                    "redirect_uri": exchange_redirect_uri,
                     "code": code,
                 },
             )
@@ -295,7 +297,7 @@ class InstagramService:
         return OAuthStartResponse(url=oauth_url, state=state)
 
     async def complete_oauth(
-        self, user: CurrentUser, code: str, state: str, workspace_id: UUID | None = None, ig_user_id: str | None = None
+        self, user: CurrentUser, code: str, state: str, workspace_id: UUID | None = None, ig_user_id: str | None = None, redirect_uri: str | None = None
     ) -> InstagramWorkspaceResponse:
         payload = None
         for secret in [self.settings.meta_app_secret, self.settings.instagram_app_secret, "dev"]:
@@ -318,7 +320,7 @@ class InstagramService:
             )
 
         connection_type = payload.get("connection_type", "instagram_direct")
-        profile = await self.provider.exchange_code(code, ig_user_id=ig_user_id)
+        profile = await self.provider.exchange_code(code, ig_user_id=ig_user_id, redirect_uri=redirect_uri)
 
         if workspace_id is not None:
             workspace_detail = await self.repository.get_workspace_detail(workspace_id)

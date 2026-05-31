@@ -44,7 +44,9 @@ async def oauth_callback(
     user: Annotated[CurrentUser, Depends(get_current_user)],
     service: Annotated[InstagramService, Depends(get_instagram_service)],
 ) -> InstagramWorkspaceResponse:
-    return await service.complete_oauth(user, request.code, request.state, ig_user_id=request.ig_user_id)
+    return await service.complete_oauth(
+        user, request.code, request.state, ig_user_id=request.ig_user_id, redirect_uri=request.redirect_uri
+    )
 
 
 @workspace_router.post("/connect-instagram", response_model=InstagramWorkspaceResponse)
@@ -61,7 +63,12 @@ async def connect_instagram_from_workspace(
         except ValueError:
             pass
     return await service.complete_oauth(
-        user, request.code, request.state, workspace_id=workspace_id, ig_user_id=request.ig_user_id
+        user,
+        request.code,
+        request.state,
+        workspace_id=workspace_id,
+        ig_user_id=request.ig_user_id,
+        redirect_uri=request.redirect_uri,
     )
 
 
