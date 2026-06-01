@@ -19,7 +19,7 @@ type DetectedAccount = {
 function InstagramCallbackPage() {
   const navigate = useNavigate({ from: "/auth/instagram/callback" });
   const queryClient = useQueryClient();
-  const { activeWorkspace } = useActiveWorkspace();
+  const { activeWorkspace, meQuery } = useActiveWorkspace();
   const [error, setError] = useState<string | null>(null);
   
   // Selection states for Option A (Workspace Selector)
@@ -31,8 +31,19 @@ function InstagramCallbackPage() {
   const [authCode, setAuthCode] = useState("");
   const [authState, setAuthState] = useState("");
   const [authIntent, setAuthIntent] = useState("");
+  const [hasTriggered, setHasTriggered] = useState(false);
 
   useEffect(() => {
+    // Wait for the active workspace context to load
+    if (meQuery.isLoading || meQuery.isFetching) {
+      return;
+    }
+
+    // Prevent double triggering
+    if (hasTriggered) {
+      return;
+    }
+
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     const state = params.get("state");
@@ -47,8 +58,9 @@ function InstagramCallbackPage() {
     setAuthState(state);
     setAuthIntent(intent);
 
+    setHasTriggered(true);
     triggerOAuthCompletion(code, state, intent);
-  }, [navigate, queryClient]);
+  }, [navigate, queryClient, meQuery.isLoading, meQuery.isFetching, activeWorkspace, hasTriggered]);
 
   const triggerOAuthCompletion = (code: string, state: string, intent: string, selectedIgUserId?: string) => {
     const complete =
@@ -122,7 +134,7 @@ function InstagramCallbackPage() {
             </div>
             <h1 className="text-xl font-semibold">Connecting Instagram</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              {error ?? "Please wait while we establish a secure connection."}
+              {error ?? (meQuery.isLoading || meQuery.isFetching ? "Retrieving workspace details..." : "Please wait while we establish a secure connection.")}
             </p>
             {error && (
               <button
