@@ -63,13 +63,13 @@ function InstagramCallbackPage() {
   }, [navigate, queryClient, meQuery.isLoading, meQuery.isFetching, activeWorkspace, hasTriggered]);
 
   const triggerOAuthCompletion = (code: string, state: string, intent: string, selectedIgUserId?: string) => {
+    // If the intent is to connect to an existing workspace but no active workspace is selected,
+    // dynamically fall back to the onboarding flow to seamlessly create a new workspace.
+    const resolvedIntent = (intent === "add_workspace" && !activeWorkspace?.id) ? "onboarding" : intent;
+
     const complete =
-      intent === "add_workspace"
+      resolvedIntent === "add_workspace"
         ? (body: { code: string; state: string; ig_user_id?: string; redirect_uri?: string }) => {
-            if (!activeWorkspace?.id && intent === "add_workspace") {
-              setError("Select a workspace before continuing.");
-              return Promise.reject(new Error("Select a workspace before continuing."));
-            }
             return instagramApi.connectWorkspace(body, activeWorkspace?.id);
           }
         : instagramApi.completeOauth;

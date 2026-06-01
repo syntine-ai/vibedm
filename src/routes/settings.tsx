@@ -239,7 +239,7 @@ export function WorkspacesTab() {
       <ConnectInstagramDialog
         open={connectDialogOpen}
         onOpenChange={setConnectDialogOpen}
-        intent={activeWorkspace?.id ? "add_workspace" : "onboarding"}
+        intent="onboarding"
       />
     </>
   );
