@@ -302,6 +302,23 @@ class InstagramService:
             
         return OAuthStartResponse(url=oauth_url, state=state)
 
+    async def _activate_workspace(self, user_id: UUID, workspace_id: UUID) -> None:
+        from sqlalchemy import text
+        await self.repository.session.execute(
+            text("update public.workspace_members set active = false where user_id = :user_id"),
+            {"user_id": user_id},
+        )
+        await self.repository.session.execute(
+            text(
+                """
+                update public.workspace_members set active = true
+                where user_id = :user_id and workspace_id = :workspace_id
+                """
+            ),
+            {"user_id": user_id, "workspace_id": workspace_id},
+        )
+        await self.repository.session.commit()
+
     async def complete_oauth(
         self, user: CurrentUser, code: str, state: str, workspace_id: UUID | None = None, ig_user_id: str | None = None, redirect_uri: str | None = None
     ) -> InstagramWorkspaceResponse:
@@ -359,6 +376,7 @@ class InstagramService:
                 "plan": "free",
                 "active": True,
             }
+            await self._activate_workspace(user.id, workspace["id"])
             return InstagramWorkspaceResponse(workspace=workspace)
 
         existing = await self.repository.find_connection_by_ig_user(profile.ig_user_id)
@@ -385,6 +403,7 @@ class InstagramService:
                 "plan": "free",
                 "active": True,
             }
+            await self._activate_workspace(user.id, workspace["id"])
             return InstagramWorkspaceResponse(workspace=workspace)
 
         workspace = await self.repository.create_workspace_with_connection(
@@ -396,6 +415,7 @@ class InstagramService:
             scopes=profile.scopes,
             connection_type=connection_type,
         )
+        await self._activate_workspace(user.id, workspace["id"])
         return InstagramWorkspaceResponse(workspace=workspace)
 
     async def disconnect(self, workspace: WorkspaceContext) -> dict[str, bool]:

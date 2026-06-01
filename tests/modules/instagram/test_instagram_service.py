@@ -18,6 +18,7 @@ class FakeInstagramRepository:
         self.connection = None
         self.workspace = None
         self.updated_calls = []
+        self.session = AsyncMock()
 
     async def find_connection_by_ig_user(self, ig_user_id: str) -> dict | None:
         if self.connection and self.connection["ig_user_id"] == ig_user_id:
