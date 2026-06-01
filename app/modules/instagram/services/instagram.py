@@ -30,7 +30,13 @@ class InstagramOAuthProvider:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
 
-    async def exchange_code(self, code: str, ig_user_id: str | None = None, redirect_uri: str | None = None) -> InstagramProfile:
+    async def exchange_code(
+        self,
+        code: str,
+        ig_user_id: str | None = None,
+        redirect_uri: str | None = None,
+        connection_type: str = "instagram_direct",
+    ) -> InstagramProfile:
         if (
             not self.settings.instagram_app_id
             or self.settings.instagram_app_id == "dev"
@@ -46,7 +52,7 @@ class InstagramOAuthProvider:
             )
 
         # 1. Configuration-based flow (Facebook Login for Business)
-        if self.settings.instagram_config_id and self.settings.instagram_config_id != "dev":
+        if connection_type == "facebook_business" and self.settings.instagram_config_id and self.settings.instagram_config_id != "dev":
             client_id = self.settings.meta_app_id or self.settings.instagram_app_id
             client_secret = self.settings.meta_app_secret or self.settings.instagram_app_secret
             exchange_redirect_uri = redirect_uri or self.settings.instagram_redirect_uri
@@ -320,7 +326,9 @@ class InstagramService:
             )
 
         connection_type = payload.get("connection_type", "instagram_direct")
-        profile = await self.provider.exchange_code(code, ig_user_id=ig_user_id, redirect_uri=redirect_uri)
+        profile = await self.provider.exchange_code(
+            code, ig_user_id=ig_user_id, redirect_uri=redirect_uri, connection_type=connection_type
+        )
 
         if workspace_id is not None:
             workspace_detail = await self.repository.get_workspace_detail(workspace_id)

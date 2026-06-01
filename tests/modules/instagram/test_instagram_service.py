@@ -328,7 +328,7 @@ async def test_exchange_code_facebook_login_for_business_success(mock_get) -> No
         Response(200, json={"id": "ig-business-888", "username": "thevijaymarathi", "name": "Vijay Marathi"}),
     ]
 
-    profile = await provider.exchange_code("fb-code-123")
+    profile = await provider.exchange_code("fb-code-123", connection_type="facebook_business")
     assert profile.ig_user_id == "ig-business-888"
     assert profile.ig_username == "thevijaymarathi"
     assert profile.access_token == "fb-page-access-token"
@@ -408,11 +408,55 @@ async def test_exchange_code_uses_custom_redirect_uri(mock_get) -> None:
     ]
 
     custom_uri = "https://custom-domain.com/callback"
-    await provider.exchange_code("fb-code-123", redirect_uri=custom_uri)
+    await provider.exchange_code("fb-code-123", redirect_uri=custom_uri, connection_type="facebook_business")
     
     # Assert first call (to exchange token) used the custom URI
     args, kwargs = mock_get.call_args_list[0]
     assert kwargs["params"]["redirect_uri"] == custom_uri
+
+
+@patch("httpx.AsyncClient.post")
+@patch("httpx.AsyncClient.get")
+async def test_exchange_code_routes_correctly_based_on_connection_type(mock_get, mock_post) -> None:
+    settings = Settings(
+        instagram_app_id="real-id",
+        instagram_app_secret="real-secret",
+        instagram_redirect_uri="http://localhost/callback",
+        instagram_config_id="3859738497654753",
+    )
+    provider = InstagramOAuthProvider(settings)
+
+    # 1. Test facebook_business connection type
+    mock_get.side_effect = [
+        Response(200, json={"access_token": "fb-user-access-token", "scopes": ["custom_scope"]}),
+        Response(200, json={
+            "data": [
+                {
+                    "name": "My Business Page",
+                    "access_token": "fb-page-access-token",
+                    "id": "page-id-999",
+                    "instagram_business_account": {"id": "ig-business-888"}
+                }
+            ]
+        }),
+        Response(200, json={"id": "ig-business-888", "username": "thevijaymarathi", "name": "Vijay Marathi"}),
+    ]
+
+    profile_business = await provider.exchange_code("fb-code-123", connection_type="facebook_business")
+    assert profile_business.ig_user_id == "ig-business-888"
+    assert profile_business.ig_username == "thevijaymarathi"
+
+    # 2. Test instagram_direct connection type
+    mock_post.return_value = Response(200, json={"access_token": "short-lived-token", "user_id": "ig-direct-555"})
+    mock_get.side_effect = [
+        Response(200, json={"access_token": "long-lived-token"}),
+        Response(200, json={"id": "ig-direct-555", "username": "direct.ig.user"}),
+    ]
+
+    profile_direct = await provider.exchange_code("direct-code-123", connection_type="instagram_direct")
+    assert profile_direct.ig_user_id == "ig-direct-555"
+    assert profile_direct.ig_username == "direct.ig.user"
+
 
 
 
