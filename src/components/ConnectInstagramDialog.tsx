@@ -28,25 +28,18 @@ export function ConnectInstagramDialog({
   isConnecting = false,
   errorMessage,
 }: ConnectInstagramDialogProps) {
-  // Set up OAuth start mutations for both legacy and professional config flows
-  const facebookMutation = useStartInstagramOauth(intent, "facebook");
+  // Set up OAuth start mutation for legacy direct flow
   const legacyMutation = useStartInstagramOauth(intent, "legacy");
-
-  const submitFacebook = () => {
-    onConnected?.();
-    facebookMutation.mutate();
-  };
 
   const submitLegacy = () => {
     onConnected?.();
     legacyMutation.mutate();
   };
 
-  const connecting = isConnecting || facebookMutation.isPending || legacyMutation.isPending;
+  const connecting = isConnecting || legacyMutation.isPending;
   
   const error =
     errorMessage ||
-    (facebookMutation.error instanceof Error ? facebookMutation.error.message : undefined) ||
     (legacyMutation.error instanceof Error ? legacyMutation.error.message : undefined);
 
   return (
@@ -58,67 +51,41 @@ export function ConnectInstagramDialog({
           </div>
           <DialogTitle>Connect Instagram</DialogTitle>
           <DialogDescription>
-            Choose how you would like to link your Instagram professional account.
+            Link your Instagram professional account using standard Instagram login.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="px-6 pb-4 space-y-3.5">
-          {error && <p className="text-xs text-destructive mt-2">{error}</p>}
+        <div className="px-6 pb-6 space-y-4">
+          {error && <p className="text-xs text-destructive">{error}</p>}
 
-          <div className="grid gap-3">
-            {/* Facebook Business (Recommended Option Card) */}
-            <button
-              type="button"
-              onClick={submitFacebook}
-              disabled={connecting}
-              className="flex items-start gap-4 p-4 rounded-xl border border-border bg-card text-left hover:bg-accent hover:border-primary transition group disabled:opacity-60"
-            >
-              <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 transition group-hover:scale-105">
-                {connecting && facebookMutation.isPending ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                )}
-              </div>
-              <div>
-                <h5 className="font-semibold text-sm text-foreground group-hover:text-primary transition">
-                  Facebook Business (Recommended)
-                </h5>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Link via your Facebook Page to unlock robust, error-free DM automations and comment triggers.
-                </p>
-              </div>
-            </button>
-
-            {/* Instagram Direct (Legacy Option Card) */}
-            <button
-              type="button"
-              onClick={submitLegacy}
-              disabled={connecting}
-              className="flex items-start gap-4 p-4 rounded-xl border border-border bg-card text-left hover:bg-accent hover:border-pink-500 transition group disabled:opacity-60"
-            >
-              <div className="w-10 h-10 rounded-lg bg-pink-500/10 text-pink-500 flex items-center justify-center shrink-0 transition group-hover:scale-105">
-                {connecting && legacyMutation.isPending ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Instagram className="w-5 h-5" />
-                )}
-              </div>
-              <div>
-                <h5 className="font-semibold text-sm text-foreground group-hover:text-pink-500 transition">
-                  Instagram Direct (Basic)
-                </h5>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Simple direct login using your Instagram password. Optimized for solo creators.
-                </p>
-              </div>
-            </button>
+          <div className="p-4 rounded-xl border border-border bg-card">
+            <p className="text-sm text-foreground font-medium mb-1">Instagram Direct Connection</p>
+            <p className="text-xs text-muted-foreground">
+              This will open a secure window to log in directly with your Instagram credentials. Please ensure your account is set up as a Creator or Business account.
+            </p>
           </div>
+
+          <Button
+            type="button"
+            onClick={submitLegacy}
+            disabled={connecting}
+            className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition flex items-center justify-center gap-2"
+          >
+            {connecting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              <>
+                <Instagram className="w-4 h-4" />
+                Continue with Instagram
+              </>
+            )}
+          </Button>
         </div>
 
-        <DialogFooter className="px-6 py-5 border-t border-border bg-surface sm:justify-end">
+        <DialogFooter className="px-6 py-4 border-t border-border bg-surface sm:justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={connecting}>
             Cancel
           </Button>

@@ -9,8 +9,10 @@ import { GoogleIcon } from "@/components/Icons";
 import { queryKeys } from "@/lib/api/hooks";
 import { authApi, getActiveWorkspace } from "@/lib/api/resources";
 import { supabase } from "@/integrations/supabase/client";
+import logo from "@/logo.png";
 
 export const Route = createFileRoute("/login")({
+  head: () => ({ meta: [{ title: "Settings - Vibe DM" }] }),
   component: LoginPage,
 });
 
@@ -64,10 +66,8 @@ function LoginPage() {
       style={{ background: "linear-gradient(135deg, #eef2ff, #f4f5fa)" }}
     >
       <div className="w-full max-w-md bg-card rounded-2xl shadow-[var(--shadow-modal)] p-8">
-        <div className="flex items-center gap-2 justify-center mb-8">
-          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-            <Heart className="size-4 fill-current" />
-          </div>
+        <div className="flex items-center gap-2.5 justify-center mb-8">
+          <img src={logo} alt="Vibe DM Logo" className="size-8 object-contain" />
           <span className="font-bold text-lg">Vibe DM</span>
         </div>
         <h1 className="text-2xl font-bold text-center mb-1">Welcome back</h1>

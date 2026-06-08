@@ -11,6 +11,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { useActiveWorkspace, useLogoutMutation, useUsageQuery } from "@/lib/api/hooks";
+import logo from "@/logo.png";
 
 type NavItem = {
   label: string;
@@ -54,10 +55,8 @@ export function AppSidebar() {
       style={{ boxShadow: "var(--shadow-sidebar)" }}
     >
       {/* Logo */}
-      <div className="h-16 flex items-center gap-2 px-5">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-          <Heart className="w-4 h-4 fill-current" />
-        </div>
+      <div className="h-16 flex items-center gap-2.5 px-5">
+        <img src={logo} alt="Vibe DM Logo" className="w-8 h-8 object-contain" />
         <span className="font-bold text-[16px] tracking-tight">Vibe DM</span>
       </div>
 

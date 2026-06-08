@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSessionQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MessageSquare, Zap, Shield, Heart } from "lucide-react";
+import logo from "@/logo.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Vibe DM - Smart Instagram Automation" }] }),
@@ -17,10 +18,8 @@ function IndexComponent() {
       {/* Navbar */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-[#4338CA] text-white p-1.5 rounded-xl">
-              <Heart className="size-5" fill="currentColor" />
-            </div>
+          <div className="flex items-center gap-2.5">
+            <img src={logo} alt="Vibe DM Logo" className="size-8 object-contain" />
             <span className="font-bold text-xl tracking-tight">Vibe DM</span>
           </div>
           <nav className="flex items-center gap-4">
@@ -108,10 +107,8 @@ function IndexComponent() {
       <footer className="w-full py-12 bg-background border-t border-border/40">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <div className="bg-[#4338CA] text-white p-1 rounded-[10px]">
-                <Heart className="size-4" fill="currentColor" />
-              </div>
+            <div className="flex items-center gap-2.5 text-muted-foreground">
+              <img src={logo} alt="Vibe DM Logo" className="size-7 object-contain" />
               <span className="font-semibold text-foreground">Vibe DM</span>
               <span className="text-sm">© {new Date().getFullYear()} Syntine Labs. All rights reserved.</span>
             </div>
