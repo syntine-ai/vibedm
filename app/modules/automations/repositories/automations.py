@@ -190,8 +190,20 @@ class AutomationRepository:
             ),
             {"workspace_id": workspace_id, "automation_id": automation_id, "event": event_str},
         )
+        row = dict(result.mappings().one())
+        
+        # Enqueue the background job to run immediately
+        from app.core.jobs import PostgresJobQueue, JobCreate
+        queue = PostgresJobQueue(self.session)
+        await queue.enqueue(
+            JobCreate(
+                job_type="automation.run",
+                workspace_id=workspace_id,
+                payload={"automation_run_id": str(row["id"])},
+            )
+        )
         await self.session.commit()
-        return dict(result.mappings().one())
+        return row
 
     async def create_automation_run(
         self,

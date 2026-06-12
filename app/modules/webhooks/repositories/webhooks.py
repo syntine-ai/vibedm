@@ -30,6 +30,7 @@ class WebhookRepository:
             return False
 
     async def find_workspace_by_ig_user(self, ig_user_id: str) -> UUID | None:
+        # 1. Try direct lookup
         result = await self.session.execute(
             text(
                 """
@@ -41,7 +42,62 @@ class WebhookRepository:
             {"ig_user_id": ig_user_id},
         )
         row = result.mappings().first()
-        return row["workspace_id"] if row else None
+        if row:
+            return row["workspace_id"]
+
+        # 2. If not found, look for candidate connections of type 'instagram_direct' that might have an app-scoped ID
+        candidates_res = await self.session.execute(
+            text(
+                """
+                select workspace_id, ig_user_id, access_token_enc
+                from public.instagram_connections
+                where connection_type = 'instagram_direct'
+                """
+            )
+        )
+        candidates = candidates_res.mappings().all()
+        if not candidates:
+            return None
+
+        import httpx
+        import logging
+        logger = logging.getLogger("app.webhooks")
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for cand in candidates:
+                token = cand["access_token_enc"].decode("utf-8")
+                try:
+                    # Query the incoming webhook ig_user_id using this candidate's access token.
+                    # If it translates to the candidate's stored app-scoped ID, we found our match!
+                    res = await client.get(
+                        f"https://graph.instagram.com/v25.0/{ig_user_id}",
+                        params={"fields": "id", "access_token": token}
+                    )
+                    if res.status_code == 200:
+                        resolved_id = res.json().get("id")
+                        if resolved_id == cand["ig_user_id"]:
+                            logger.info(
+                                f"💡 Auto-resolved and migrating ig_user_id: '{cand['ig_user_id']}' -> '{ig_user_id}'"
+                            )
+                            await self.session.execute(
+                                text(
+                                    """
+                                    update public.instagram_connections
+                                    set ig_user_id = :new_id,
+                                        updated_at = now()
+                                    where workspace_id = :workspace_id
+                                    """
+                                ),
+                                {"new_id": ig_user_id, "workspace_id": cand["workspace_id"]},
+                            )
+                            await self.session.commit()
+                            return cand["workspace_id"]
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to verify candidate {cand['ig_user_id']} for webhook ID {ig_user_id}: {e}"
+                    )
+        
+        return None
 
     async def list_active_automations(self, workspace_id: UUID) -> list[dict]:
         result = await self.session.execute(
