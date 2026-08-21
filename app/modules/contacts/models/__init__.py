@@ -1,0 +1,1 @@
+"""Contact SQLAlchemy models."""
