@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: vibedm-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "54322:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./vibedm_backend
+      dockerfile: Dockerfile
+    container_name: vibedm-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./vibedm_backend:/app
+      # Do not overwrite virtual environment inside container with host files
+      - /app/.venv
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/postgres
+      SUPABASE_URL: https://placeholder-supabase-url.supabase.co
+      SUPABASE_JWT_SECRET: placeholder-jwt-secret-key-placeholder-jwt-secret-key
+      FRONTEND_ORIGIN: http://localhost:3000
+      LOG_LEVEL: DEBUG
+      ALLOWED_HOSTS: "*"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./vibedm_frontend
+      dockerfile: Dockerfile
+    container_name: vibedm-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./vibedm_frontend:/app
+      # Do not overwrite node_modules with host folder if not installed locally
+      - /app/node_modules
+    environment:
+      VITE_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
