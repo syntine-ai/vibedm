@@ -11,6 +11,7 @@ services:
       - "54325:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./vibedm_frontend/supabase/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
