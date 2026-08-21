@@ -36,7 +36,9 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Deploy to Cloudflare
-        run: npx wrangler deploy
+        run: |
+          rm -rf ../../.wrangler
+          npx wrangler deploy
         working-directory: ./vibedm_frontend/dist/server
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
