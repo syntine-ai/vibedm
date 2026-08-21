@@ -177,6 +177,25 @@ Once the frontend and backend are running, here is how to use the Vibe DM automa
 
 ---
 
+## 🌐 Production Deployment
+
+The frontend of this monorepo is pre-configured to build and run on **Cloudflare Pages** using edge server-side rendering (SSR) supported by `@cloudflare/vite-plugin`.
+
+### Automated Deployment via GitHub Actions
+
+We have provided a GitHub Actions workflow in [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml) that automatically builds and deploys your frontend to Cloudflare Pages on every push to the `main` branch.
+
+#### To set up the automated deployment pipeline:
+1. Go to your GitHub repository settings under **Settings** > **Secrets and variables** > **Actions**.
+2. Add the following **Repository Secrets**:
+   * `CLOUDFLARE_API_TOKEN`: Your Cloudflare API Token (with permission to edit Cloudflare Pages).
+   * `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare Account ID (found in the Cloudflare dashboard URL).
+   * `VITE_SUPABASE_URL`: Your production Supabase project URL.
+   * `VITE_SUPABASE_ANON_KEY`: Your production Supabase anonymous client key.
+3. Once these secrets are added, pushing to the `main` branch will automatically build and publish your frontend to a live URL!
+
+---
+
 ## 🧪 Linting and Testing
 
 Linting checks and unit tests run automatically on every pull request via GitHub Actions. You can execute them locally before pushing:
