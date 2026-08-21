@@ -61,28 +61,45 @@ Vibe_DM/
 
 You can run the application locally either using **Docker (Recommended)** or by setting up the individual services **Manually**.
 
-### Prerequisite Environment Configuration
+### 🔑 Environment Configuration
 
-Before running, make sure to set up the configuration files. 
+Before running the application, copy the example environment files and configure the parameters:
 
-1.  **Backend:** Copy [`vibedm_backend/.env.example`](./vibedm_backend/.env.example) to `.env` and fill in Supabase and Meta/Instagram credentials.
-2.  **Frontend:** Copy [`vibedm_frontend/.env.example`](./vibedm_frontend/.env.example) to `.env` and fill in your Supabase variables.
+#### 1. Backend Configuration
+Navigate to [`vibedm_backend/`](./vibedm_backend/) and copy the file:
+```bash
+cp .env.example .env
+```
+Key configuration settings in `.env`:
+*   `DATABASE_URL`: In Docker, this is pre-configured to point to the local database container. For manual host running, set this to `postgresql+asyncpg://postgres:postgres@localhost:54325/postgres`.
+*   `SUPABASE_URL` / `SUPABASE_JWT_SECRET`: Used to securely verify frontend authenticated tokens.
+*   `INSTAGRAM_APP_ID` / `INSTAGRAM_APP_SECRET`: Obtained from your [Meta Developer Dashboard](https://developers.facebook.com/).
+*   `INSTAGRAM_REDIRECT_URI`: The callback URI for OAuth (usually `http://localhost:3000/auth/instagram/callback`).
+
+#### 2. Frontend Configuration
+Navigate to [`vibedm_frontend/`](./vibedm_frontend/) and copy the file:
+```bash
+cp .env.example .env
+```
+Key configuration settings in `.env`:
+*   `VITE_API_URL`: Points to the running backend service (normally `http://localhost:8000`).
+*   `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`: Credentials for connecting to your Supabase Auth project.
 
 ---
 
 ### Option A: Docker Compose Setup (Quickest)
 
-We provide a pre-configured Docker Compose setup that runs PostgreSQL, the backend API, and the React frontend in containers.
+Docker Compose spins up a PostgreSQL database container and automatically initializes the database schemas and tables using the migrations mounted from `./vibedm_frontend/supabase/migrations` (along with a Supabase compatibility shim).
 
 From the root directory, simply run:
 ```bash
 docker compose up --build
 ```
 
-This starts:
-*   **Postgres Database:** Available on port `54322`
-*   **FastAPI Backend:** Available at `http://localhost:8000` (Docs at `http://localhost:8000/docs`)
-*   **React Frontend:** Available at `http://localhost:3000`
+This starts three services:
+1.  **Postgres Database (`vibedm-db`):** Live locally on port `54325`.
+2.  **FastAPI Backend (`vibedm-backend`):** Live at `http://localhost:8000`. (Interactive OpenAPI Swagger documentation is available at `http://localhost:8000/docs`).
+3.  **Vite Frontend UI (`vibedm-frontend`):** Live at `http://localhost:3000`.
 
 ---
 
@@ -93,17 +110,16 @@ Navigate to the backend directory:
 ```bash
 cd vibedm_backend
 ```
-
 Ensure you have the `uv` toolchain installed (or use standard Python pip/virtualenv):
 ```bash
-# Sync dependencies
+# Install and sync dependencies
 uv sync
 
-# Run the FastAPI server (reloads on file changes)
+# Run the FastAPI server (reloads automatically on code updates)
 uv run uvicorn app.main:app --reload
 ```
 
-In a separate terminal, start the background worker process:
+In a separate terminal, start the background worker process responsible for executing scheduled tasks and queuing webhook automation runs:
 ```bash
 uv run python -m app.worker
 ```
@@ -113,49 +129,83 @@ Navigate to the frontend directory:
 ```bash
 cd ../vibedm_frontend
 ```
-
-Install node modules and start Vite development server:
+Install Node modules and start the development server:
 ```bash
 # Install dependencies
 npm install
 
-# Run the dev server
+# Run the development server
 npm run dev
 ```
 
-The UI should now be active at `http://localhost:3000/` or `http://localhost:5173/`.
+---
+
+## 🔄 Application Usability & Core Workflows
+
+Once the frontend and backend are running, here is how to use the Vibe DM automation platform:
+
+### 1. Account Signup & Login
+* Open your browser and go to `http://localhost:3000/signup`.
+* Sign up for an account. Your credentials will be managed by Supabase.
+* Once verified, log in at `http://localhost:3000/login`.
+
+### 2. Connect Your Instagram Business Account
+* Go to the **Settings** tab.
+* Click **Connect Instagram**.
+* You will be redirected to Facebook OAuth. Log in using a Facebook account that manages an Instagram Business Account/Page.
+* Grant the requested permissions (Access direct messages, read conversations, manage pages).
+* Once completed, you will be redirected back, and your connected account will show up under your active workspace.
+
+### 3. Build a DM Automation Flow
+* Go to the **Automations** tab.
+* Click **Create Automation** (or edit an existing template).
+* **Set a Trigger:**
+  * E.g., *User Comments on a Post* (you can restrict this to specific posts or look for specific keywords in the comment).
+  * E.g., *User Sends a DM* containing a specific trigger phrase (e.g., "INFO").
+* **Set an Action:**
+  * E.g., *Send Direct Message* with a specific text response and a clickable button/link.
+  * E.g., *Ask for Contact Details* (collect the user's email/phone number).
+* Turn the toggle status to **Active** to publish your flow.
+
+### 4. Monitor Webhooks and Runs (Testing Automations)
+* To receive messages in real time on localhost, configure a webhook tunnel (like **ngrok**) to map to your backend `http://localhost:8000`.
+* Enter your ngrok webhook endpoint under the Meta App Dashboard Webhooks section.
+* When a test user comments or sends a DM matching your trigger, the Meta webhook sends an event to `/webhooks/instagram` on the backend.
+* The backend parses the event, queues a job, and the worker executes the automation action (sending a DM response to the test user).
+* View execution logs, success rates, and total clicks on the **Dashboard** page.
+* View captured user profiles under the **Contacts** tab.
 
 ---
 
 ## 🧪 Linting and Testing
 
-Both projects are set up with linting and unit tests, which run automatically in our CI pipeline.
+Linting checks and unit tests run automatically on every pull request via GitHub Actions. You can execute them locally before pushing:
 
 *   **Backend Verification:**
     ```bash
     cd vibedm_backend
-    uv run pytest
-    uv run ruff check .
-    uv run mypy app
+    uv run pytest        # Run unit tests
+    uv run ruff check .  # Lint python code
+    uv run mypy app      # Static type analysis
     ```
 
 *   **Frontend Verification:**
     ```bash
     cd vibedm_frontend
-    npm run lint
-    npm run test
+    npm run lint         # Lint typescript code
+    npm run test         # Run frontend unit tests
     ```
 
 ---
 
 ## 🤝 Contributing
 
-We welcome open-source contributions! If you would like to contribute:
-1. Fork this repository.
-2. Create a feature branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes (`git commit -m 'Add some amazing feature'`).
-4. Push to the branch (`git push origin feature/amazing-feature`).
-5. Open a Pull Request.
+We welcome contributions from the open-source community!
+1. Fork the repository.
+2. Create a clean branch (`git checkout -b feature/my-new-feature`).
+3. Commit your changes (`git commit -m 'feat: add some feature'`).
+4. Push to the branch (`git push origin feature/my-new-feature`).
+5. Open a Pull Request on GitHub.
 
 ---
 
