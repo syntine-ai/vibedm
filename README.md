@@ -1,5 +1,9 @@
 # Vibe DM
 
+<p align="center">
+  <img src="assets/logo.png" alt="Vibe DM Logo" width="120">
+</p>
+
 [![CI Status](https://github.com/syntine-ai/vibedm/actions/workflows/ci.yml/badge.svg)](https://github.com/syntine-ai/vibedm/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
@@ -9,6 +13,10 @@
 Vibe DM is a modern, open-source, smart **Instagram DM automation platform** built to help creators, brands, and businesses streamline customer interactions, automate direct message workflows, and run campaigns seamlessly. 
 
 This repository is structured as a **monorepo** containing both the backend service and the frontend user interface.
+
+<p align="center">
+  <img src="assets/vibedm_preview.png" alt="Vibe DM Preview" width="800">
+</p>
 
 ---
 
