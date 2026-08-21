@@ -1,7 +1,9 @@
 import asyncio
 import sys
-from app.db import get_sessionmaker
+
 from sqlalchemy import text
+
+from app.db import get_sessionmaker
 
 sys.stdout.reconfigure(encoding='utf-8')
 

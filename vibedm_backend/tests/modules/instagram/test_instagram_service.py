@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 from uuid import UUID
-import pytest
+
 from httpx import Response
 
 from app.config import Settings
-from app.core.errors import ApiError
-from app.modules.instagram.services.instagram import InstagramOAuthProvider, InstagramService
-from app.modules.instagram.schemas.instagram import InstagramProfile
 from app.deps import CurrentUser
+from app.modules.instagram.schemas.instagram import InstagramProfile
+from app.modules.instagram.services.instagram import InstagramOAuthProvider, InstagramService
 from app.security import sign_state
 
 

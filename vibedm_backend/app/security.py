@@ -14,7 +14,6 @@ from jwt import PyJWKClient
 from app.config import Settings
 from app.core.errors import ApiError
 
-
 _jwks_client: PyJWKClient | None = None
 
 def get_jwks_client(supabase_url: str) -> PyJWKClient:

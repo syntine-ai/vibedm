@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import json
+from uuid import UUID
 
 from app.config import Settings
 from app.core.errors import ApiError
 from app.modules.webhooks.repositories.webhooks import WebhookRepository
 from app.security import verify_hmac_hex, verify_stripe_signature
 
-
-from uuid import UUID
 
 class WebhookService:
     def __init__(self, repository: WebhookRepository, settings: Settings) -> None:
@@ -27,8 +26,8 @@ class WebhookService:
                 )
             expected = signature.removeprefix("sha256=") if signature.startswith("sha256=") else signature
             if not verify_hmac_hex(body, expected, self.settings.instagram_webhook_secret):
-                import logging
                 import hmac
+                import logging
                 from hashlib import sha256
                 computed = hmac.new(self.settings.instagram_webhook_secret.encode("utf-8"), body, sha256).hexdigest()
                 logging.getLogger("app.webhooks").warning(

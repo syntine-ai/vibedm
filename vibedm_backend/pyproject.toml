@@ -30,9 +30,16 @@ pythonpath = ["."]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+exclude = [
+    "scratch",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+ignore = [
+    "E501", # Line too long
+    "B007", # Loop control variable not used
+]
 
 [tool.mypy]
 python_version = "3.11"

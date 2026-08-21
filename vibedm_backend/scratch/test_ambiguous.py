@@ -1,9 +1,10 @@
 import asyncio
 import os
 from uuid import UUID
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import text
+
 from dotenv import load_dotenv
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 load_dotenv()
 
@@ -46,7 +47,7 @@ async def test_query():
                 }
             )
             print("Query succeeded! Found rows:", len(result.all()))
-    except Exception as e:
+    except Exception:
         print("Query failed with error:")
         import traceback
         traceback.print_exc()

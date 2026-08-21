@@ -1,5 +1,6 @@
 import os
 
+
 def main():
     search_dir = "d:\\Code\\vibedm\\vibedm_frontend\\src"
     keyword = "instagram_intent"
@@ -9,11 +10,11 @@ def main():
             if file.endswith((".ts", ".tsx", ".js", ".jsx")):
                 path = os.path.join(root, file)
                 try:
-                    with open(path, "r", encoding="utf-8") as f:
+                    with open(path, encoding="utf-8") as f:
                         for line_num, line in enumerate(f, 1):
                             if keyword in line:
                                 print(f"{path}:{line_num}: {line.strip()}")
-                except Exception as e:
+                except Exception:
                     pass
 
 if __name__ == "__main__":

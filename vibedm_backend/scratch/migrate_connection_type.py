@@ -1,6 +1,9 @@
 import asyncio
+
 from sqlalchemy import text
+
 from app.db import get_session
+
 
 async def main():
     print("Starting DDL migration...")

@@ -1,5 +1,5 @@
 file_path = r"d:\Code\vibedm\vibedm_frontend\src\routes\automations.$id.edit.tsx"
-with open(file_path, "r", encoding="utf-8") as f:
+with open(file_path, encoding="utf-8") as f:
     lines = f.readlines()
 
 for i, line in enumerate(lines):

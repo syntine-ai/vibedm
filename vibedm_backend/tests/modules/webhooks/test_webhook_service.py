@@ -3,14 +3,13 @@ from __future__ import annotations
 import hmac
 import json
 from hashlib import sha256
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from app.config import Settings
 from app.core.errors import ApiError
 from app.modules.webhooks.services.webhooks import WebhookService
-from app.modules.webhooks.repositories.webhooks import WebhookRepository
 
 
 class FakeWebhookRepository:

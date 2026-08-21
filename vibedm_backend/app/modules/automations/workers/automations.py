@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import httpx
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
+
+import httpx
 
 from app.db import get_sessionmaker
 from app.modules.automations.repositories.automations import AutomationRepository
@@ -89,7 +90,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                     "action_type": "send_dm",
                     "status": "queued",
                     "response": None,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
                 try:
                     if is_mock:
@@ -140,7 +141,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                     "action_type": "send_dm",
                     "status": "queued",
                     "response": None,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
                 
                 try:
@@ -199,7 +200,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                         "action_type": action_type,
                         "status": "queued",
                         "response": None,
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
                     
                     try:
@@ -367,7 +368,7 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                                         # User has followed successfully! Mark step succeeded and advance.
                                         existing_entry["status"] = "succeeded"
                                         existing_entry["response"] = {"status": "verified", "reason": "Follow verified successfully via live API check"}
-                                        existing_entry["timestamp"] = datetime.now(timezone.utc).isoformat()
+                                        existing_entry["timestamp"] = datetime.now(UTC).isoformat()
                                         continue  # Let the loop proceed to the next step!
                                     else:
                                         # User claimed they followed but API says they are not following.
@@ -494,10 +495,11 @@ async def run_automation(automation_run_id: UUID) -> dict[str, str]:
                         )
                     else:
                         from datetime import timedelta
-                        from app.core.jobs import PostgresJobQueue, JobCreate
+
+                        from app.core.jobs import JobCreate, PostgresJobQueue
                         
                         delay_mins = trigger_config.get("follow_up_delay") or 10
-                        run_at = datetime.now(timezone.utc) + timedelta(minutes=delay_mins)
+                        run_at = datetime.now(UTC) + timedelta(minutes=delay_mins)
                         
                         follow_up_run_id = await repo.create_automation_run(
                             workspace_id=run["workspace_id"],

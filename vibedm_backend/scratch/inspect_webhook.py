@@ -1,7 +1,9 @@
 import asyncio
+
 from sqlalchemy import text
+
 from app.db import get_session
-from app.config import get_settings
+
 
 async def main():
     session_generator = get_session()

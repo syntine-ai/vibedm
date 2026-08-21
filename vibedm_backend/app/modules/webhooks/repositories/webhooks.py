@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from uuid import UUID
+
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -59,8 +60,9 @@ class WebhookRepository:
         if not candidates:
             return None
 
-        import httpx
         import logging
+
+        import httpx
         logger = logging.getLogger("app.webhooks")
         
         async with httpx.AsyncClient(timeout=10.0) as client:

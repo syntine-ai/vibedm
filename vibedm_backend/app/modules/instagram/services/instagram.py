@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import urlencode
 from uuid import UUID
+
 import httpx
 
 from app.config import Settings
@@ -442,7 +443,7 @@ class InstagramService:
                     "media_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80" if i % 3 != 0 else "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&q=80",
                     "thumbnail_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80" if i % 3 != 0 else "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&q=80",
                     "permalink": "https://instagram.com",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
                 for i in range(1, limit + 1)
             ]

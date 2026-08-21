@@ -193,7 +193,7 @@ class AutomationRepository:
         row = dict(result.mappings().one())
         
         # Enqueue the background job to run immediately
-        from app.core.jobs import PostgresJobQueue, JobCreate
+        from app.core.jobs import JobCreate, PostgresJobQueue
         queue = PostgresJobQueue(self.session)
         await queue.enqueue(
             JobCreate(

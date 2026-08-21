@@ -1,11 +1,13 @@
 import asyncio
 import sys
 from uuid import UUID
+
+from sqlalchemy import text
+
+from app.core.jobs import PostgresJobQueue
 from app.db import get_sessionmaker
 from app.modules.automations.repositories.automations import AutomationRepository
-from app.core.jobs import PostgresJobQueue
 from app.worker import dispatch_job
-from sqlalchemy import text
 
 sys.stdout.reconfigure(encoding='utf-8')
 

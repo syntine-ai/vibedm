@@ -1,8 +1,9 @@
 import asyncio
 import os
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import text
+
 from dotenv import load_dotenv
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 load_dotenv()
 
@@ -14,7 +15,7 @@ async def test_conn():
         async with engine.connect() as conn:
             result = await conn.execute(text("SELECT 1"))
             print("Connection successful! Result:", result.scalar())
-    except Exception as e:
+    except Exception:
         print("Connection failed with error:")
         import traceback
         traceback.print_exc()
